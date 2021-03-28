@@ -1,0 +1,24 @@
+<div class="container" [ngStyle]="{'display': attributes.hidden? 'none' : 'flex', 
+'height': attributes.height + 'px', 'background-color': attributes.bg, 'color': attributes.color}">
+
+  <div class="info-bar">
+
+    <span class="title">
+      {{title | uppercase}}
+    </span>
+
+    <span class="score" *ngIf="currentScore && currentScore !== 0">
+      Score: <br> {{currentScore}}
+    </span>
+
+    <span class="best-score" *ngIf="bestScore && bestScore !== 0">
+      Best score: <br> {{bestScore}}
+    </span>
+
+  </div>
+
+  <div class="btn-container">
+
+  </div>
+
+</div>
