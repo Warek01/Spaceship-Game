@@ -19,6 +19,7 @@ export class AppComponent implements OnInit, AfterViewInit {
   bestScore!: number;
   currentGameState = GameService.GameState.Menu;
   isBestScore = false;
+  isPaused = false;
 
   constructor(
     public Game: GameService,

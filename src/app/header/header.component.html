@@ -2,7 +2,7 @@
 
   <div class="info-bar">
 
-    <span class="title">
+    <span class="title logo">
       {{title | uppercase}}
     </span>
 
@@ -23,13 +23,12 @@
   <div class="btn-container">
     <div class="btns">
 
-      <!-- Ingame buttons -->
       <ng-template [ngIf]="currentGameState !== GameState.Menu">
         <button (click)="Game.pause()">
           pause
         </button>
-        <button (click)="Game.stop()">
-          back
+        <button (click)="Game.stop()" *ngIf="currentGameState === GameState.Paused">
+          end 
         </button>
       </ng-template>
       <button>

@@ -23,14 +23,15 @@ export class HeaderComponent implements OnInit, OnChanges {
     color: "#333",
   };
   newBestIndicator = false;
+  isPaused = false;
   headerHeight = new EventEmitter<number>();
-
+  
   @Input("score") currentScore!: number;
-  @Input("best-score") bestScore!: number;
-  @Input("is-best-score") isBestScore = false;
+  @Input() bestScore!: number;
+  @Input() isBestScore = false;
   @Input("app-title") title!: string;
   @Input("game-state") currentGameState!: number;
-
+  
   constructor(public Game: GameService, Sizes: SizingService) {
     this.attributes.height = Sizes.headerHeight + "px";
   }

@@ -1,10 +1,12 @@
+@use "fonts/index" as fonts;
+
 :root {
   font-size: 16px;
   font-family: "Montserrat", sans-serif;
 }
 
 ::selection {
-  background-color: rgba(#a29bfe, .6);
+  background-color: rgba(#a29bfe, 0.6);
 }
 
 body {
@@ -27,8 +29,7 @@ button {
   cursor: pointer;
   color: #cfcfcf;
   font-size: 1rem;
-  transition: background-color 125ms ease-out,
-    color 75ms linear;
+  transition: background-color 125ms ease-out, color 75ms linear;
 
   &:hover {
     background-color: #fa5b5b;
@@ -39,4 +40,8 @@ button {
     outline: none;
     border: none;
   }
+}
+
+.logo {
+  font-family: fonts.$game;
 }

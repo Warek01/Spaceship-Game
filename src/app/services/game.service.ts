@@ -21,6 +21,7 @@ export class GameService {
 
   private _currentScore = 0;
   private _bestScore = 0;
+  private _currentGameState = GameState.Menu;
   private _scoreIntervalId!: any;
 
   readonly currentScore = new EventEmitter<number>();
@@ -41,7 +42,10 @@ export class GameService {
   }
 
   stop() {
-    clearInterval(this._scoreIntervalId);
+    if (this._scoreIntervalId) {
+      clearInterval(this._scoreIntervalId);
+      this._scoreIntervalId = null;
+    }
 
     if (this._currentScore > this._bestScore) {
       this._bestScore = this._currentScore;
@@ -55,10 +59,17 @@ export class GameService {
     this.Router.navigate(["/end-screen"]);
   }
 
-  pause() {}
+  pause() {
+    if (this._scoreIntervalId && this._currentGameState === GameState.Paused) {
+      this.changeGameState(GameState.Paused);
+    }
+  }
+
+  continue() {}
 
   changeGameState(state: GameState) {
     this.currentGameState.emit(state);
+    this._currentGameState = state;
   }
 
   /** Save score and best score to LocalStorage */

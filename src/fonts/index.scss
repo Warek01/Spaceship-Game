@@ -1,0 +1,14 @@
+$game: "Karmatic Arcade";
+
+@font-face {
+  font-family: "Karmatic Arcade";
+  src: url("KarmaticArcade.eot");
+  src: local("Karmatic Arcade"), local("KarmaticArcade"),
+    url("KarmaticArcade.eot?#iefix") format("embedded-opentype"),
+    url("KarmaticArcade.woff2") format("woff2"),
+    url("KarmaticArcade.woff") format("woff"),
+    url("KarmaticArcade.ttf") format("truetype");
+  font-weight: normal;
+  font-style: normal;
+  font-display: fallback;
+}
