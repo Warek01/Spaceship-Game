@@ -1,4 +1,5 @@
 import { Injectable, EventEmitter, OnInit } from "@angular/core";
+import { ActivatedRoute, Router } from "@angular/router";
 
 enum GameState {
   Menu = 0,
@@ -27,17 +28,12 @@ export class GameService {
   readonly shipPosition = new EventEmitter<Position>();
   readonly currentGameState = new EventEmitter<GameState>();
 
-  constructor() {
-    setTimeout(() => {
-      this.launch();
-      setTimeout(() => {
-        this.stop();
-      }, 3000);
-    }, 1500);
-  }
+  constructor(private Router: Router, private Route: ActivatedRoute) {}
 
   launch() {
     this.changeGameState(GameState.InGame);
+    this.Router.navigate(["/game"]);
+
     this._scoreIntervalId = setInterval(() => {
       this._currentScore++;
       this.currentScore.emit(this._currentScore);
@@ -46,6 +42,7 @@ export class GameService {
 
   stop() {
     clearInterval(this._scoreIntervalId);
+
     if (this._currentScore > this._bestScore) {
       this._bestScore = this._currentScore;
       this._currentScore = 0;
@@ -55,6 +52,7 @@ export class GameService {
 
     this.currentScore.emit(0);
     this.changeGameState(GameState.EndScreen);
+    this.Router.navigate(["/end-screen"]);
   }
 
   pause() {}

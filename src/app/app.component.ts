@@ -4,6 +4,7 @@ import {
   OnInit,
   ViewEncapsulation,
 } from "@angular/core";
+import { ActivatedRoute, Router } from "@angular/router";
 import { GameService } from "./services/game.service";
 
 @Component({
@@ -17,8 +18,13 @@ export class AppComponent implements OnInit, AfterViewInit {
   currentScore!: number;
   bestScore!: number;
   currentGameState = GameService.GameState.Menu;
+  isBestScore = false;
 
-  constructor(public Game: GameService) {}
+  constructor(
+    public Game: GameService,
+    public Router: Router,
+    public Route: ActivatedRoute
+  ) {}
 
   ngOnInit() {
     this.Game.currentScore.subscribe((score) => {
@@ -27,6 +33,7 @@ export class AppComponent implements OnInit, AfterViewInit {
 
     this.Game.bestScore.subscribe((score) => {
       this.bestScore = score;
+      this.isBestScore = true;
     });
 
     this.Game.currentGameState.subscribe((state) => {

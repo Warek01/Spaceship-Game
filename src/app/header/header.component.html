@@ -1,5 +1,4 @@
-<div class="container" [ngStyle]="{'display': attributes.hidden? 'none' : 'flex', 
-'height': attributes.height + 'px', 'background-color': attributes.bg, 'color': attributes.color}">
+<div class="container" [ngStyle]="attributes">
 
   <div class="info-bar">
 
@@ -15,6 +14,10 @@
       Best score: <br> {{bestScore}}
     </span>
 
+    <span class="best-score-alert" *ngIf="newBestIndicator">
+      new best!
+    </span>
+
   </div>
 
   <div class="btn-container">
@@ -26,7 +29,7 @@
           pause
         </button>
         <button (click)="Game.stop()">
-          menu
+          back
         </button>
       </ng-template>
       <button>
