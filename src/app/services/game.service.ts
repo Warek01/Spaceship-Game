@@ -1,6 +1,6 @@
 import { Injectable, EventEmitter, OnInit } from "@angular/core";
 
-export enum GameState {
+enum GameState {
   Menu = 0,
   InGame,
   Paused,
@@ -16,6 +16,8 @@ export interface Position {
   providedIn: "root",
 })
 export class GameService {
+  static readonly GameState = GameState;
+
   private _currentScore = 0;
   private _bestScore = 0;
   private _scoreIntervalId!: any;
@@ -25,13 +27,21 @@ export class GameService {
   readonly shipPosition = new EventEmitter<Position>();
   readonly currentGameState = new EventEmitter<GameState>();
 
-  constructor() {}
+  constructor() {
+    setTimeout(() => {
+      this.launch();
+      setTimeout(() => {
+        this.stop();
+      }, 3000);
+    }, 1500);
+  }
 
   launch() {
+    this.changeGameState(GameState.InGame);
     this._scoreIntervalId = setInterval(() => {
       this._currentScore++;
       this.currentScore.emit(this._currentScore);
-    }, 200);
+    }, 50);
   }
 
   stop() {
@@ -41,11 +51,13 @@ export class GameService {
       this._currentScore = 0;
 
       this.bestScore.emit(this._bestScore);
-      this.currentScore.emit(0);
-
-      this.changeGameState(GameState.EndScreen);
     }
+
+    this.currentScore.emit(0);
+    this.changeGameState(GameState.EndScreen);
   }
+
+  pause() {}
 
   changeGameState(state: GameState) {
     this.currentGameState.emit(state);

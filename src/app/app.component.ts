@@ -4,7 +4,7 @@ import {
   OnInit,
   ViewEncapsulation,
 } from "@angular/core";
-import { GameService, GameState } from "./services/game.service";
+import { GameService } from "./services/game.service";
 
 @Component({
   selector: "app-root",
@@ -13,9 +13,10 @@ import { GameService, GameState } from "./services/game.service";
   encapsulation: ViewEncapsulation.Emulated,
 })
 export class AppComponent implements OnInit, AfterViewInit {
-  title = "Spaceship Game";
+  title = "Spaceship";
   currentScore!: number;
   bestScore!: number;
+  currentGameState = GameService.GameState.Menu;
 
   constructor(public Game: GameService) {}
 
@@ -28,13 +29,9 @@ export class AppComponent implements OnInit, AfterViewInit {
       this.bestScore = score;
     });
 
-    setTimeout(() => {
-      this.Game.launch();
-
-      setTimeout(() => {
-        this.Game.stop();
-      }, 3000);
-    }, 1000);
+    this.Game.currentGameState.subscribe((state) => {
+      this.currentGameState = state;
+    });
   }
   ngAfterViewInit() {}
 }

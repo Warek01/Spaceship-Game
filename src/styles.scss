@@ -1,10 +1,39 @@
 :root {
   font-size: 16px;
   font-family: "Montserrat", sans-serif;
-  color: #fff;
+}
+
+::selection {
+  background-color: rgba(#a29bfe, .6);
 }
 
 body {
   margin: 0;
   padding: 0;
+  color: #333;
+}
+
+button {
+  position: relative;
+  display: block;
+  border: none;
+  border-radius: 5px;
+  padding: 5px 10px;
+  text-transform: uppercase;
+  background-color: #ff7675;
+  cursor: pointer;
+  color: #cfcfcf;
+  font-size: 1rem;
+  transition: background-color 125ms ease-out,
+    color 75ms linear;
+
+  &:hover {
+    background-color: #fa5b5b;
+    color: #fff;
+  }
+
+  &:focus {
+    outline: none;
+    border: none;
+  }
 }

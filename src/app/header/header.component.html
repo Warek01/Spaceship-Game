@@ -7,7 +7,7 @@
       {{title | uppercase}}
     </span>
 
-    <span class="score" *ngIf="currentScore && currentScore !== 0">
+    <span class="score" *ngIf="currentScore >= 0">
       Score: <br> {{currentScore}}
     </span>
 
@@ -18,7 +18,21 @@
   </div>
 
   <div class="btn-container">
+    <div class="btns">
 
+      <!-- Ingame buttons -->
+      <ng-template [ngIf]="currentGameState !== GameState.Menu">
+        <button (click)="Game.pause()">
+          pause
+        </button>
+        <button (click)="Game.stop()">
+          menu
+        </button>
+      </ng-template>
+      <button>
+        help
+      </button>
+    </div>
   </div>
 
 </div>
