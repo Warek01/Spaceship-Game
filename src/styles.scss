@@ -1,4 +1,5 @@
 @use "fonts/index" as fonts;
+@use "scss/defaults" as def;
 
 :root {
   font-size: 16px;
@@ -6,13 +7,13 @@
 }
 
 ::selection {
-  background-color: rgba(#a29bfe, 0.6);
+  background-color: def.$selection-color;
 }
 
 body {
   margin: 0;
   padding: 0;
-  color: #333;
+  color: def.$text-color;
   width: 100vw;
   height: 100vh;
   overflow: hidden;
@@ -25,14 +26,14 @@ button {
   border-radius: 5px;
   padding: 5px 10px;
   text-transform: uppercase;
-  background-color: #ff7675;
+  background-color: def.$button-color;
   cursor: pointer;
   color: #cfcfcf;
   font-size: 1rem;
   transition: background-color 125ms ease-out, color 75ms linear;
 
   &:hover {
-    background-color: #fa5b5b;
+    background-color: def.$button-hover-color;
     color: #fff;
   }
 
@@ -43,5 +44,7 @@ button {
 }
 
 .logo {
-  font-family: fonts.$game;
+  font-family: fonts.$logo-font;
+  text-transform: uppercase;
+  letter-spacing: 2px;
 }

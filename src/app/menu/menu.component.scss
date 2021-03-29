@@ -1,7 +1,81 @@
+@use "../../fonts/index" as fonts;
+
 .container {
   position: relative;
   display: flex;
   width: 100%;
   justify-content: center;
   align-items: center;
+}
+
+button.start {
+  width: 250px;
+  height: 125px;
+  border-radius: 10px;
+  padding: 0;
+  font-size: 1.5rem;
+  letter-spacing: 5px;
+  background-color: transparent;
+  font-family: fonts.$logo-font-alt;
+  transition: all 200ms linear;
+
+  &:hover {
+    background-color: mediumturquoise;
+    color: #333;
+
+    &::before {
+      animation: top-part 200ms;
+      filter: opacity(0);
+    }
+
+    &::after {
+      animation: bottom-part 400ms;
+      filter: opacity(0);
+    }
+  }
+
+  &::before,
+  &::after {
+    content: "start";
+    position: absolute;
+    display: flex;
+    justify-content: center;
+    align-items: center;
+    width: 250px;
+    height: 125px;
+    border-radius: 10px;
+    text-transform: uppercase;
+    letter-spacing: 5px;
+    font-size: 1.5rem;
+    pointer-events: none;
+    transition: all 0;
+    transition-delay: 200ms;
+  }
+
+  &::before {
+    top: -175px;
+  }
+
+  @keyframes top-part {
+    0% {
+    }
+    100% {
+      top: 0;
+    }
+  }
+
+  @keyframes bottom-part {
+    0% {
+    }
+    50% {
+      bottom: -175px;
+    }
+    100% {
+      bottom: 0;
+    }
+  }
+
+  &::after {
+    bottom: -175px;
+  }
 }

@@ -6,6 +6,7 @@ import {
   SimpleChanges,
   EventEmitter,
 } from "@angular/core";
+import { Router } from "@angular/router";
 import { GameService } from "../services/game.service";
 import { SizingService } from "../services/sizing.service";
 
@@ -25,14 +26,18 @@ export class HeaderComponent implements OnInit, OnChanges {
   newBestIndicator = false;
   isPaused = false;
   headerHeight = new EventEmitter<number>();
-  
+
   @Input("score") currentScore!: number;
   @Input() bestScore!: number;
   @Input() isBestScore = false;
   @Input("app-title") title!: string;
   @Input("game-state") currentGameState!: number;
-  
-  constructor(public Game: GameService, Sizes: SizingService) {
+
+  constructor(
+    private Router: Router,
+    public Game: GameService,
+    public Sizes: SizingService
+  ) {
     this.attributes.height = Sizes.headerHeight + "px";
   }
 
@@ -51,5 +56,10 @@ export class HeaderComponent implements OnInit, OnChanges {
         }
       }, 500);
     }
+  }
+
+  goToMenu() {
+    this.Router.navigate(["/menu"]);
+    this.Game.changeGameState(this.GameState.Menu);
   }
 }

@@ -37,9 +37,12 @@ export class AppComponent implements OnInit, AfterViewInit {
       this.isBestScore = true;
     });
 
-    this.Game.currentGameState.subscribe((state) => {
+    this.Game.CurrentGameState.subscribe((state) => {
       this.currentGameState = state;
     });
   }
-  ngAfterViewInit() {}
+  ngAfterViewInit() {
+    if (this.Route.snapshot.url.toString() !== "/menu")
+      this.Router.navigate(["/menu"]);
+  }
 }

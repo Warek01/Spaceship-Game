@@ -21,15 +21,19 @@ export class GameService {
 
   private _currentScore = 0;
   private _bestScore = 0;
-  private _currentGameState = GameState.Menu;
   private _scoreIntervalId!: any;
 
   readonly currentScore = new EventEmitter<number>();
   readonly bestScore = new EventEmitter<number>();
   readonly shipPosition = new EventEmitter<Position>();
-  readonly currentGameState = new EventEmitter<GameState>();
+  readonly CurrentGameState = new EventEmitter<GameState>();
+  currentGameState = GameState.Menu;
 
-  constructor(private Router: Router, private Route: ActivatedRoute) {}
+  constructor(private Router: Router, private Route: ActivatedRoute) {
+    this.CurrentGameState.subscribe((state) => {
+      this.currentGameState = state;
+    });
+  }
 
   launch() {
     this.changeGameState(GameState.InGame);
@@ -60,7 +64,7 @@ export class GameService {
   }
 
   pause() {
-    if (this._scoreIntervalId && this._currentGameState === GameState.Paused) {
+    if (this._scoreIntervalId && this.currentGameState !== GameState.Paused) {
       this.changeGameState(GameState.Paused);
     }
   }
@@ -68,8 +72,8 @@ export class GameService {
   continue() {}
 
   changeGameState(state: GameState) {
-    this.currentGameState.emit(state);
-    this._currentGameState = state;
+    this.CurrentGameState.emit(state);
+    this.currentGameState = state;
   }
 
   /** Save score and best score to LocalStorage */

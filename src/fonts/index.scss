@@ -1,4 +1,5 @@
-$game: "Karmatic Arcade";
+$logo-font: "Karmatic Arcade";
+$logo-font-alt: "Arcade Interlaced";
 
 @font-face {
   font-family: "Karmatic Arcade";
@@ -8,6 +9,19 @@ $game: "Karmatic Arcade";
     url("KarmaticArcade.woff2") format("woff2"),
     url("KarmaticArcade.woff") format("woff"),
     url("KarmaticArcade.ttf") format("truetype");
+  font-weight: normal;
+  font-style: normal;
+  font-display: fallback;
+}
+
+@font-face {
+  font-family: "Arcade Interlaced";
+  src: url("subset-ArcadeInterlaced.eot");
+  src: local("Arcade Interlaced"), local("ArcadeInterlaced"),
+    url("subset-ArcadeInterlaced.eot?#iefix") format("embedded-opentype"),
+    url("subset-ArcadeInterlaced.woff2") format("woff2"),
+    url("subset-ArcadeInterlaced.woff") format("woff"),
+    url("subset-ArcadeInterlaced.ttf") format("truetype");
   font-weight: normal;
   font-style: normal;
   font-display: fallback;
