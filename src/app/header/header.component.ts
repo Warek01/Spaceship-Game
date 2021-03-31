@@ -20,8 +20,8 @@ export class HeaderComponent implements OnInit, OnChanges {
   attributes = {
     display: "flex",
     height: "0px",
-    backgroundColor: "#00000030",
-    color: "#333",
+    backgroundColor: "#000000ff",
+    color: "#fff",
   };
   newBestIndicator = false;
   isPaused = false;

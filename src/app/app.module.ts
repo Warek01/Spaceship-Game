@@ -7,6 +7,7 @@ import { MenuComponent } from './menu/menu.component';
 import { HeaderComponent } from './header/header.component';
 import { EndScreenComponent } from './end-screen/end-screen.component';
 import { GameComponent } from './game/game.component';
+import { HttpClientModule } from "@angular/common/http";
 
 @NgModule({
   declarations: [
@@ -14,13 +15,14 @@ import { GameComponent } from './game/game.component';
     MenuComponent,
     HeaderComponent,
     EndScreenComponent,
-    GameComponent
+    GameComponent,
   ],
   imports: [
     BrowserModule,
     AppRoutingModule,
+    HttpClientModule
   ],
-  providers: [],
+  providers: [HttpClientModule],
   bootstrap: [AppComponent]
 })
 export class AppModule { }

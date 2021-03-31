@@ -1,6 +1,8 @@
 @use "fonts/index" as fonts;
 @use "scss/defaults" as def;
 
+@forward "scss/asteroids";
+
 :root {
   font-size: 16px;
   font-family: "Montserrat", sans-serif;

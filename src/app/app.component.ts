@@ -5,7 +5,9 @@ import {
   ViewEncapsulation,
 } from "@angular/core";
 import { ActivatedRoute, Router } from "@angular/router";
-import { GameService } from "./services/game.service";
+import { GameService, GameState, trackMovement } from "./services/game.service";
+
+import $ from "jquery";
 
 @Component({
   selector: "app-root",
@@ -25,7 +27,12 @@ export class AppComponent implements OnInit, AfterViewInit {
     public Game: GameService,
     public Router: Router,
     public Route: ActivatedRoute
-  ) {}
+  ) {
+    $(document.body).css(
+      "background-image",
+      `url(./assets/img/${this.Game.textures.bg[this.Game.currentTexture.bg]})`
+    );
+  }
 
   ngOnInit() {
     this.Game.currentScore.subscribe((score) => {
@@ -44,5 +51,7 @@ export class AppComponent implements OnInit, AfterViewInit {
   ngAfterViewInit() {
     if (this.Route.snapshot.url.toString() !== "/menu")
       this.Router.navigate(["/menu"]);
+
+    $(window).keydown(trackMovement(this));
   }
 }

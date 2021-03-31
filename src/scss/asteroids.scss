@@ -1,0 +1,11 @@
+.asteroid {
+  position: absolute;
+  display: inline-block;
+  border-radius: 50%;
+  background-color: yellow;
+  background-image: none;
+  background-repeat: no-repeat;
+  background-size: contain;
+
+  transition: all 20s linear;
+}

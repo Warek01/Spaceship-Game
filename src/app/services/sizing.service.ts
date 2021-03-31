@@ -11,5 +11,9 @@ export class SizingService {
     return document.body.clientHeight - this.headerHeight;
   }
 
+  get availWidth() {
+    return document.body.clientWidth;
+  }
+
   constructor() {}
 }
