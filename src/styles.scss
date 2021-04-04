@@ -1,1 +1,59 @@
-/* You can add global styles to this file, and also import other style files */
+@use "fonts/index" as fonts;
+@use "scss/defaults" as def;
+@use "scss/mixins" as mix;
+
+@forward "scss/asteroid";
+@forward "scss/ship";
+
+:root {
+  font-size: 16px;
+  font-family: fonts.$lexend;
+  font-weight: 300;
+  letter-spacing: 2px;
+}
+
+::selection {
+  background-color: def.$selection-color;
+}
+
+body {
+  margin: 0;
+  padding: 0;
+  color: def.$text-color;
+  width: 100vw;
+  height: 100vh;
+  overflow: hidden;
+  background-image: url(./assets/img/game_bg_1.jpg);
+  background-repeat: no-repeat;
+  background-size: cover;
+}
+
+button {
+  position: relative;
+  display: block;
+  border: none;
+  border-radius: 5px;
+  padding: 5px 10px;
+  text-transform: uppercase;
+  background-color: def.$button-color;
+  cursor: pointer;
+  color: #cfcfcf;
+  font-size: 1rem;
+  transition: background-color 125ms ease-out, color 75ms linear;
+
+  &:hover {
+    background-color: def.$button-hover-color;
+    color: #fff;
+  }
+
+  &:focus {
+    outline: none;
+    border: none;
+  }
+}
+
+.logo {
+  font-family: fonts.$logo;
+  text-transform: uppercase;
+  letter-spacing: 2px;
+}

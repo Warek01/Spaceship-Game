@@ -1,0 +1,98 @@
+@use "../../fonts/index" as fonts;
+@use "../../scss/defaults" as def;
+@use "../../scss/mixins" as mix;
+
+.container {
+  @include mix.container();
+  display: block;
+}
+
+.config-container {
+  position: relative;
+  display: grid;
+  width: 100%;
+  height: 70%;
+  grid-template-columns: repeat(3, 33.3333%);
+  grid-template-rows: 70%;
+  grid-column-gap: 10px;
+
+  .config {
+    position: relative;
+    display: flex;
+    justify-content: center;
+    align-items: center;
+
+    .btn-container {
+      position: absolute;
+      display: flex;
+      width: 75%;
+      height: 25%;
+      bottom: 10%;
+      align-items: center;
+      justify-content: space-evenly;
+
+      button {
+        display: flex;
+        justify-content: center;
+        align-items: center;
+
+        img {
+          width: 30px;
+          height: 30px;
+
+          &.left-arrow {
+            transform: rotateZ(180deg);
+          }
+        }
+      }
+    }
+
+    .ship-texture {
+      position: relative;
+      display: flex;
+      width: 125px;
+      height: 125px;
+      justify-content: center;
+      align-items: center;
+    }
+
+    .title {
+      text-transform: uppercase;
+      font-size: 1.5rem;
+    }
+
+    .difficulty {
+      text-align: center;
+    }
+  }
+}
+
+.start-btn-container {
+  position: absolute;
+  display: flex;
+  width: 100%;
+  bottom: 0;
+  min-height: 20%;
+  max-height: 30%;
+  justify-content: center;
+  align-items: center;
+
+  .start {
+    position: relative;
+    top: 0;
+    left: 0;
+    border-radius: 10px;
+    padding: 30px 30px;
+    font-size: 2rem;
+    letter-spacing: 5px;
+    font-family: fonts.$logo-alt;
+    box-shadow: 5px 5px 4px rgba(lighten(def.$button-color, 10), 0.25);
+    transition: all 150ms linear;
+
+    &:hover {
+      top: 4px;
+      left: 4px;
+      box-shadow: 3px 3px 5px rgba(#000, 0.35);
+    }
+  }
+}

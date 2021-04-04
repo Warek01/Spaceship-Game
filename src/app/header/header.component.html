@@ -1,0 +1,43 @@
+<div class="container" [ngStyle]="attributes">
+
+  <div class="info-bar">
+
+    <span class="title logo">
+      {{title | uppercase}}
+    </span>
+
+    <span class="score" *ngIf="currentScore >= 0">
+      Score: <br> {{currentScore}}
+    </span>
+
+    <span class="best-score" *ngIf="bestScore && bestScore !== 0">
+      Best score: <br> {{bestScore}}
+    </span>
+
+    <span class="best-score-alert" *ngIf="isBestScore">
+      new best!
+    </span>
+
+  </div>
+
+  <div class="btn-container">
+    <div class="btns">
+
+      <ng-template [ngIf]="currentGameState !== GameState.Menu">
+        <button (click)="Game.pause()" *ngIf="currentGameState !== GameState.EndScreen">
+          pause
+        </button>
+        <button (click)="Game.stop()" *ngIf="currentGameState === GameState.Paused">
+          end
+        </button>
+      </ng-template>
+      <button>
+        help
+      </button>
+      <button (click)="goToMenu()" *ngIf="currentGameState === GameState.EndScreen">
+        menu
+      </button>
+    </div>
+  </div>
+
+</div>

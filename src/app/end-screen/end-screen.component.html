@@ -1,0 +1,14 @@
+<div class="container">
+  <div class="banner">
+    <h1 class="game-over">
+      game over
+    </h1>
+  </div>
+  <br>
+  <div class="stats">
+    <p *ngFor="let stat of stats">
+      <span class="stat-description">{{stat.description}}: </span>
+      <span class="stat-data">{{stat.data}}</span>
+    </p>
+  </div>
+</div>

@@ -1,0 +1,56 @@
+<div class="container" [ngStyle]="attributes">
+
+  <div class="config-container">
+    <div class="config">
+      <img class="ship-texture" [src]="texture" alt="">
+      <div class="btn-container">
+        <button (click)="previousShipTexture()">
+          <img src="../../assets/img/arrow_1.png" alt="" srcset="" class="left-arrow">
+        </button>
+        <button (click)="nextShipTexture()">
+          <img src="../../assets/img/arrow_1.png" alt="" srcset="" class="right-arrow">
+        </button>
+      </div>
+    </div>
+
+    <div class="config">
+      <div>
+        <p class="title">
+          difficulty:
+        </p>
+        <p class="difficulty">
+          {{difficulty}}
+        </p>
+      </div>
+      <div class="btn-container">
+        <button (click)="lowerDifficulty()">
+          <img src="../../assets/img/arrow_1.png" alt="" srcset="" class="left-arrow">
+        </button>
+        <button (click)="raiseDifficulty()">
+          <img src="../../assets/img/arrow_1.png" alt="" srcset="" class="right-arrow">
+        </button>
+      </div>
+    </div>
+
+    <div class="config">
+      <p class="title">
+        background
+      </p>
+      <div class="btn-container">
+        <button (click)="previousSBgTexture()">
+          <img src="../../assets/img/arrow_1.png" alt="" srcset="" class="left-arrow">
+        </button>
+        <button (click)="nextBgTexture()">
+          <img src="../../assets/img/arrow_1.png" alt="" srcset="" class="right-arrow">
+        </button>
+      </div>
+    </div>
+  </div>
+
+  <div class="start-btn-container">
+    <button routerLink="/game" class="start">
+      Start
+    </button>
+  </div>
+
+</div>

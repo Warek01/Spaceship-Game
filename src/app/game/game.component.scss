@@ -1,0 +1,16 @@
+@use "../../fonts/index" as fonts;
+@use "../../scss/defaults" as def;
+@use "../../scss/mixins" as mix;
+
+.container {
+  @include mix.container(false);
+}
+
+.ship-container {
+  position: relative;
+  display: inline-flex;
+  height: 100%;
+  width: 50px;
+  margin-left: 100px;
+  z-index: 90;
+}
