@@ -1,11 +1,15 @@
 @use "fonts/index" as fonts;
 @use "scss/defaults" as def;
+@use "scss/mixins" as mix;
 
-@forward "scss/asteroids";
+@forward "scss/asteroid";
+@forward "scss/ship";
 
 :root {
   font-size: 16px;
-  font-family: "Montserrat", sans-serif;
+  font-family: fonts.$lexend;
+  font-weight: 300;
+  letter-spacing: 2px;
 }
 
 ::selection {
@@ -19,6 +23,9 @@ body {
   width: 100vw;
   height: 100vh;
   overflow: hidden;
+  background-image: url(./assets/img/game_bg_1.jpg);
+  background-repeat: no-repeat;
+  background-size: cover;
 }
 
 button {
@@ -46,7 +53,7 @@ button {
 }
 
 .logo {
-  font-family: fonts.$logo-font;
+  font-family: fonts.$logo;
   text-transform: uppercase;
   letter-spacing: 2px;
 }

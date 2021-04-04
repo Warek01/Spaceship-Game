@@ -6,9 +6,9 @@ import {
   SimpleChanges,
   EventEmitter,
 } from "@angular/core";
-import { Router } from "@angular/router";
-import { GameService } from "../services/game.service";
-import { SizingService } from "../services/sizing.service";
+import { NavigationEnd, Router } from "@angular/router";
+import { GameService, GameState } from "../services/game.service";
+import { ViewComputingService } from "../services/viewComputing.service";
 
 @Component({
   selector: "app-header",
@@ -16,6 +16,12 @@ import { SizingService } from "../services/sizing.service";
   styleUrls: ["./header.component.scss"],
 })
 export class HeaderComponent implements OnInit, OnChanges {
+  private _intervals: {
+    bestScore: any;
+  } = {
+    bestScore: null,
+  };
+
   GameState = GameService.GameState;
   attributes = {
     display: "flex",
@@ -23,7 +29,6 @@ export class HeaderComponent implements OnInit, OnChanges {
     backgroundColor: "#000000ff",
     color: "#fff",
   };
-  newBestIndicator = false;
   isPaused = false;
   headerHeight = new EventEmitter<number>();
 
@@ -36,30 +41,39 @@ export class HeaderComponent implements OnInit, OnChanges {
   constructor(
     private Router: Router,
     public Game: GameService,
-    public Sizes: SizingService
+    public View: ViewComputingService
   ) {
-    this.attributes.height = Sizes.headerHeight + "px";
+    this.attributes.height = View.headerHeight + "px";
   }
 
-  ngOnInit() {}
+  ngOnInit() { 
+    this.Router.events.subscribe((event) => {
+      if (
+        event instanceof NavigationEnd &&
+        event.urlAfterRedirects === "/menu"
+      ) {
+        GameService.clearIntervals(this._intervals);
+        this.isBestScore = false;
+        this.currentScore = 0;
+      }
+    });
+  }
 
   ngOnChanges(changes: SimpleChanges) {
-    // When a new best score occurs
     if (changes.bestScore && !changes.bestScore.firstChange) {
       let counter = 0;
-      const intervalId = setInterval(() => {
-        this.newBestIndicator = !this.newBestIndicator;
+      this._intervals.bestScore = setInterval(() => {
+        this.isBestScore = !this.isBestScore;
 
         if (++counter === 20) {
-          clearInterval(intervalId);
-          this.newBestIndicator = true;
+          clearInterval(this._intervals.bestScore);
+          this.isBestScore = true;
         }
       }, 500);
     }
   }
 
   goToMenu() {
-    this.Router.navigate(["/menu"]);
-    this.Game.changeGameState(this.GameState.Menu);
+    this.Game.navTo(this.GameState.Menu);
   }
 }

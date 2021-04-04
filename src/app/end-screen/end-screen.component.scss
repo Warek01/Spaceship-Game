@@ -1,0 +1,31 @@
+@use "../../fonts/index" as fonts;
+@use "../../scss/defaults" as def;
+@use "../../scss/mixins" as mix;
+
+.container {
+  @include mix.container(true);
+  display: block;
+}
+
+.banner {
+  @include mix.banner(true); 
+  min-height: 10%;
+  max-height: 30%;
+  margin-top: 10%;
+}
+
+.stats {
+  width: 100%;
+  min-height: 10%;
+  max-height: 30%;
+  margin-top: 10%;
+
+  p {
+    margin-left: 5ch;
+    font-size: 1.1rem;
+  }
+
+  .stat-data {
+    color: #c7ecee;
+  }
+}

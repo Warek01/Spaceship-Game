@@ -1,0 +1,29 @@
+@mixin container($centered: true) {
+  position: relative;
+  display: flex;
+  width: 100%;
+  height: 100%;
+
+  @if $centered {
+    justify-content: center;
+    align-items: center;
+  }
+}
+
+@mixin banner($centered: false) {
+  position: relative;
+  display: inline-flex;
+  margin: 0;
+  padding: 0;
+  justify-content: center;
+  align-items: center;
+  text-align: center;
+  cursor: default;
+  text-transform: uppercase;
+  font-size: 2rem;
+  font-weight: 100;
+
+  @if $centered {
+    width: 100%;
+  }
+}

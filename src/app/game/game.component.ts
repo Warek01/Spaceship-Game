@@ -1,7 +1,18 @@
-import { Component, OnInit } from "@angular/core";
+import {
+  AfterViewInit,
+  Component,
+  Input,
+  OnDestroy,
+  OnInit,
+} from "@angular/core";
 import { Router } from "@angular/router";
-import { GameService, Asteroid } from "../services/game.service";
-import { SizingService } from "../services/sizing.service";
+import {
+  GameService,
+  Asteroid,
+  Position,
+  Difficulty,
+} from "../services/game.service";
+import { ViewComputingService } from "../services/viewComputing.service";
 import $ from "jquery";
 
 @Component({
@@ -9,16 +20,28 @@ import $ from "jquery";
   templateUrl: "./game.component.html",
   styleUrls: ["./game.component.scss"],
 })
-export class GameComponent implements OnInit {
+export class GameComponent implements OnInit, OnDestroy, AfterViewInit {
+  private _shipElement!: JQuery<HTMLDivElement>;
+  private _shipPosition!: Position;
+  private _shipRadius = 20;
+
   asteroids = new Map<number, Asteroid>();
   height!: string;
 
+  @Input() difficulty!: Difficulty;
+  @Input() shipTexture!: string;
+
   constructor(
     private Router: Router,
-    private Sizing: SizingService,
+    private View: ViewComputingService,
     public Game: GameService
   ) {
-    this.height = Sizing.availHeight + "px";
+    this.height = View.availHeight + "px";
+
+    this.Game.launch();
+    $(window)
+      .keydown(this.Game.trackKeyDown(this))
+      .keyup(this.Game.trackKeyUp(this));
   }
 
   private renderAsteroid(asteroid: Asteroid) {
@@ -27,11 +50,11 @@ export class GameComponent implements OnInit {
     obj
       .css({
         top: asteroid.initialY,
-        left: this.Sizing.availWidth - 50,
+        left: this.View.availWidth - 50,
         height: asteroid.radius,
         width: asteroid.radius,
         backgroundImage: `url(../../assets/img/${asteroid.texture})`,
-        transitionDuration: this.Sizing.availWidth / asteroid.velocity + "s"
+        transitionDuration: this.View.availWidth / asteroid.velocity + "s",
       })
       .addClass("asteroid");
 
@@ -46,27 +69,53 @@ export class GameComponent implements OnInit {
     asteroidObject: JQuery<HTMLDivElement>,
     asteroid: Asteroid
   ) {
-    const obj = asteroidObject;
-
-    obj.css({
-      top: asteroid.finalY,
-      left: 0,
-    });
-
-    obj.on("transitionend", (e) => {
-      this.removeAsteroid(obj);
-    });
+    asteroidObject
+      .css({
+        top: asteroid.finalY,
+        left: 0 - asteroid.radius * 2,
+      })
+      .on("transitionend", (e) => {
+        this.removeAsteroid(asteroidObject);
+      });
   }
 
   private removeAsteroid(asteroidObject: JQuery<HTMLDivElement>) {
+    this.Game.CountAsteroid.emit(null);
     asteroidObject.remove();
   }
 
-  ngOnInit() {
+  ngOnInit() {}
+
+  ngAfterViewInit() {
+    this._shipElement = $("#ship");
+    this._shipPosition = {
+      x: this._shipElement.offset()!.left,
+      y: this._shipElement.offset()!.top,
+    };
+    this._shipRadius = parseFloat(this._shipElement.css("height")) / 2;
+
+    this.Game.set
+      .ship({
+        element: this._shipElement,
+        pos: this._shipPosition,
+        speed: 50,
+      })
+      .asteroidRadius(40)
+      .asteroidSpeed(500, 0)
+      .shipPosition({
+        x: 0,
+        y: this.View.availHeight / 2 - this._shipRadius,
+      });
+
     this.Game.Asteroid.subscribe((asteroid) => {
       this.renderAsteroid(asteroid);
     });
+  }
 
-    $(window).blur((e) => {});
+  ngOnDestroy() {
+    $(window).off({
+      keydown: this.Game.trackKeyDown(this),
+      keyup: this.Game.trackKeyUp(this),
+    });
   }
 }

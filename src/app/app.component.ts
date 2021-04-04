@@ -4,10 +4,16 @@ import {
   OnInit,
   ViewEncapsulation,
 } from "@angular/core";
-import { ActivatedRoute, Router } from "@angular/router";
-import { GameService, GameState, trackMovement } from "./services/game.service";
+import {
+  ActivatedRoute,
+  NavigationEnd,
+  Router,
+  RouterEvent,
+} from "@angular/router";
+import { GameService, GameState } from "./services/game.service";
 
 import $ from "jquery";
+import { ViewComputingService } from "./services/viewComputing.service";
 
 @Component({
   selector: "app-root",
@@ -19,19 +25,17 @@ export class AppComponent implements OnInit, AfterViewInit {
   title = "Spaceship";
   currentScore!: number;
   bestScore!: number;
-  currentGameState = GameService.GameState.Menu;
+  currentGameState = GameState.Menu;
   isBestScore = false;
   isPaused = false;
 
   constructor(
-    public Game: GameService,
-    public Router: Router,
-    public Route: ActivatedRoute
+    private View: ViewComputingService,
+    private Game: GameService,
+    private Router: Router,
+    private Route: ActivatedRoute
   ) {
-    $(document.body).css(
-      "background-image",
-      `url(./assets/img/${this.Game.textures.bg[this.Game.currentTexture.bg]})`
-    );
+    $(document.body).css("font-size", View.fontSize);
   }
 
   ngOnInit() {
@@ -48,10 +52,9 @@ export class AppComponent implements OnInit, AfterViewInit {
       this.currentGameState = state;
     });
   }
+
   ngAfterViewInit() {
     if (this.Route.snapshot.url.toString() !== "/menu")
       this.Router.navigate(["/menu"]);
-
-    $(window).keydown(trackMovement(this));
   }
 }

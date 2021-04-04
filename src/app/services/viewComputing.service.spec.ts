@@ -1,13 +1,13 @@
 import { TestBed } from '@angular/core/testing';
 
-import { SizingService } from './sizing.service';
+import { ViewComputingService } from './viewComputing.service';
 
 describe('SizingService', () => {
-  let service: SizingService;
+  let service: ViewComputingService;
 
   beforeEach(() => {
     TestBed.configureTestingModule({});
-    service = TestBed.inject(SizingService);
+    service = TestBed.inject(ViewComputingService);
   });
 
   it('should be created', () => {

@@ -1,5 +1,11 @@
-$logo-font: "Karmatic Arcade";
-$logo-font-alt: "Arcade Interlaced";
+@import url('https://fonts.googleapis.com/css2?family=Roboto:wght@100;300;400&display=fallback');
+@import url('https://fonts.googleapis.com/css2?family=Lexend:wght@100;300;400&display=fallback');
+
+$default: sans-serif;
+$logo: "Karmatic Arcade";
+$logo-alt: "Arcade Interlaced";
+$roboto: "Roboto";
+$lexend: "Lexend";
 
 @font-face {
   font-family: "Karmatic Arcade";
