@@ -8,6 +8,7 @@ import { HeaderComponent } from "./header/header.component";
 import { EndScreenComponent } from "./end-screen/end-screen.component";
 import { GameComponent } from "./game/game.component";
 import { HttpClientModule } from "@angular/common/http";
+import { HelpWindowComponent } from './help-window/help-window.component';
 
 @NgModule({
   declarations: [
@@ -16,6 +17,7 @@ import { HttpClientModule } from "@angular/common/http";
     HeaderComponent,
     EndScreenComponent,
     GameComponent,
+    HelpWindowComponent,
   ],
   imports: [BrowserModule, AppRoutingModule, HttpClientModule],
   providers: [HttpClientModule],

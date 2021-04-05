@@ -31,8 +31,12 @@
           end
         </button>
       </ng-template>
-      <button>
+
+      <button (click)="openHelpWindow()">
         help
+      </button>
+      <button (click)="fullscreen()">
+        fullscreen
       </button>
       <button (click)="goToMenu()" *ngIf="currentGameState === GameState.EndScreen">
         menu
