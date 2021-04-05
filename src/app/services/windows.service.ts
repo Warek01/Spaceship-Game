@@ -16,7 +16,7 @@ export class WindowsService {
     this._registeredWindows.push(wd);
   }
 
-  open(windowName: string) {
+  open(windowName: string,) {
     this._registeredWindows.forEach((wd) => {
       if (wd.id === windowName) {
         this._openedWindows.push(wd);
@@ -44,4 +44,5 @@ export interface AppWindow {
 
 export interface AppWindowRef extends AppWindow {
   ref: ComponentRef<unknown>;
+  params?: any;
 }

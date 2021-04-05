@@ -1,4 +1,4 @@
-@use "../../scss/defaults" as def;
+@use "../../../scss/defaults" as def;
 
 :host {
   position: absolute;
@@ -20,7 +20,7 @@
 
   @media screen and (max-width: 951px) {
     width: 80%;
-    height: 85%;  
+    height: 85%;
   }
 }
 
@@ -74,5 +74,21 @@
     display: flex;
     justify-content: center;
     align-items: center;
+  }
+}
+
+.content-area {
+  position: relative;
+  display: flex;
+  justify-content: center;
+  align-items: center;
+  width: 100%;
+  height: calc(100% - 35px);
+
+  .content {
+    position: relative;
+    display: block;
+    width: 95%;
+    height: 100%;
   }
 }

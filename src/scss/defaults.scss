@@ -1,10 +1,18 @@
+@use "../fonts/index" as fonts;
+
 $button-color: #ff7675;
 $button-hover-color: #fa5b5b;
 $button-red-color: #e74c3c;
 $button-red-hover-color: #c0392b;
 
+$defalut-font: fonts.$lexend;
 $logo-color: #b33939;
+$logo-font: fonts.$karmatic;
+$logo-alt-font: fonts.$arcade;
 
 $text-color: #fff;
 
 $selection-color: rgba(#a29bfe, 0.6);
+
+$kbd-font: fonts.$cutive;
+$kbd-dark: #2c3e50;

@@ -10,7 +10,7 @@ import {
   HostListener,
 } from "@angular/core";
 import { NavigationEnd, Router } from "@angular/router";
-import { HelpWindowComponent } from "../help-window/help-window.component";
+import { HelpWindowComponent } from "../app-windows/help/help-window.component";
 import { GameService, GameState } from "../services/game.service";
 import { ViewComputingService } from "../services/viewComputing.service";
 import { WindowsService, AppWindow } from "../services/windows.service";
@@ -58,16 +58,6 @@ export class HeaderComponent implements OnInit, OnChanges {
 
   openHelpWindow() {
     this.WinService.open("help");
-  }
-
-  fullscreen() {
-    if (
-      document.fullscreenElement ||
-      (screen.availHeight === window.innerHeight &&
-        screen.availWidth === window.innerWidth)
-    )
-      document.exitFullscreen();
-    else document.documentElement.requestFullscreen();
   }
 
   ngOnInit() {

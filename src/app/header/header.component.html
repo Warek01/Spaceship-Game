@@ -35,7 +35,7 @@
       <button (click)="openHelpWindow()">
         help
       </button>
-      <button (click)="fullscreen()">
+      <button (click)="Game.toggleFullscreen()">
         fullscreen
       </button>
       <button (click)="goToMenu()" *ngIf="currentGameState === GameState.EndScreen">

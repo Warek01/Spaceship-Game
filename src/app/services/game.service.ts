@@ -463,6 +463,17 @@ export class GameService {
       }
     }.bind(component);
   }
+
+  toggleFullscreen() {
+    if (!document.fullscreenEnabled) return alert("Fullscreen not allowed");
+    if (
+      document.fullscreenElement ||
+      (screen.availHeight === window.innerHeight &&
+        screen.availWidth === window.innerWidth)
+    )
+      document.exitFullscreen();
+    else document.documentElement.requestFullscreen();
+  }
 }
 
 export type gameMode = "debug" | "release";

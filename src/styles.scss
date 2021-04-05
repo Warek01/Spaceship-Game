@@ -7,7 +7,7 @@
 
 :root {
   font-size: 16px;
-  font-family: fonts.$lexend;
+  font-family: def.$defalut-font;
   font-weight: 300;
   letter-spacing: 2px;
 }
@@ -50,7 +50,6 @@ button:not(.custom) {
     outline: none;
     border: none;
   }
-
 }
 
 button.custom {
@@ -75,7 +74,20 @@ button.custom {
 }
 
 .logo {
-  font-family: fonts.$logo;
+  font-family: def.$logo-font;
   text-transform: uppercase;
   letter-spacing: 2px;
+}
+
+kbd {
+  display: inline-flex;
+  justify-content: center;
+  align-items: center;
+  text-transform: uppercase;
+  padding: 3px 6px;
+  border-radius: 2px;
+  font-weight: normal;
+  font-size: 0.8rem;
+  background-color: def.$kbd-dark;
+  font-family: def.$kbd-font;
 }

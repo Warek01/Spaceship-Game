@@ -18,7 +18,7 @@ import {
   AppWindowRef,
 } from "./services/windows.service";
 import $ from "jquery";
-import { HelpWindowComponent } from "./help-window/help-window.component";
+import { HelpWindowComponent } from "./app-windows/help/help-window.component";
 
 @Component({
   selector: "app-root",
@@ -27,10 +27,23 @@ import { HelpWindowComponent } from "./help-window/help-window.component";
   encapsulation: ViewEncapsulation.Emulated,
 })
 export class AppComponent implements OnInit, AfterViewInit {
+  private _activeWindow: AppWindowRef | null = null;
   private _openedWindows: AppWindowRef[] = [];
   private _registeredWindows: AppWindow[] = [
     { id: "help", component: HelpWindowComponent },
   ];
+
+  @HostListener("document:keydown.escape", ["$event"]) private trackEscPress(
+    e: KeyboardEvent
+  ) {
+    e.preventDefault();
+  }
+  @HostListener("document:keydown.h") private openHelpWindow() {
+    this.WinService.open("help")
+  }
+  @HostListener("document:keydown.f") private enterFullScreen() {
+    this.Game.toggleFullscreen();
+  }
 
   title = "Spaceship";
   currentScore!: number;
@@ -38,12 +51,6 @@ export class AppComponent implements OnInit, AfterViewInit {
   currentGameState = GameState.Menu;
   isBestScore = false;
   isPaused = false;
-
-  @HostListener("document:keydown.escape", ["$event"]) trackEscPress(
-    e: KeyboardEvent
-  ) {
-    e.preventDefault();
-  }
 
   constructor(
     private View: ViewComputingService,

@@ -1,20 +1,21 @@
-@import url('https://fonts.googleapis.com/css2?family=Roboto:wght@100;300;400&display=fallback');
-@import url('https://fonts.googleapis.com/css2?family=Lexend:wght@100;300;400&display=fallback');
+@import url("https://fonts.googleapis.com/css2?family=Roboto:wght@100;300;400&display=fallback");
+@import url("https://fonts.googleapis.com/css2?family=Lexend:wght@100;300;400&display=fallback");
 
 $default: sans-serif;
-$logo: "Karmatic Arcade";
-$logo-alt: "Arcade Interlaced";
+$karmatic: "Karmatic Arcade";
+$arcade: "Arcade Interlaced";
 $roboto: "Roboto";
 $lexend: "Lexend";
+$cutive: "CutiveMono-Regular";
 
 @font-face {
   font-family: "Karmatic Arcade";
-  src: url("KarmaticArcade.eot");
+  src: url(KarmaticArcade.eot);
   src: local("Karmatic Arcade"), local("KarmaticArcade"),
-    url("KarmaticArcade.eot?#iefix") format("embedded-opentype"),
-    url("KarmaticArcade.woff2") format("woff2"),
-    url("KarmaticArcade.woff") format("woff"),
-    url("KarmaticArcade.ttf") format("truetype");
+    url(KarmaticArcade.eot?#iefix) format("embedded-opentype"),
+    url(KarmaticArcade.woff2) format("woff2"),
+    url(KarmaticArcade.woff) format("woff"),
+    url(KarmaticArcade.ttf) format("truetype");
   font-weight: normal;
   font-style: normal;
   font-display: fallback;
@@ -22,12 +23,25 @@ $lexend: "Lexend";
 
 @font-face {
   font-family: "Arcade Interlaced";
-  src: url("subset-ArcadeInterlaced.eot");
+  src: url(subset-ArcadeInterlaced.eot);
   src: local("Arcade Interlaced"), local("ArcadeInterlaced"),
-    url("subset-ArcadeInterlaced.eot?#iefix") format("embedded-opentype"),
-    url("subset-ArcadeInterlaced.woff2") format("woff2"),
-    url("subset-ArcadeInterlaced.woff") format("woff"),
-    url("subset-ArcadeInterlaced.ttf") format("truetype");
+    url(subset-ArcadeInterlaced.eot?#iefix) format("embedded-opentype"),
+    url(subset-ArcadeInterlaced.woff2) format("woff2"),
+    url(subset-ArcadeInterlaced.woff) format("woff"),
+    url(subset-ArcadeInterlaced.ttf) format("truetype");
+  font-weight: normal;
+  font-style: normal;
+  font-display: fallback;
+}
+
+@font-face {
+  font-family: "CutiveMono-Regular";
+  src: url(CutiveMono-Regular.eot);
+  src: local("CutiveMono-Regular"),
+    url(CutiveMono-Regular.eot?#iefix) format("embedded-opentype"),
+    url(CutiveMono-Regular.woff2) format("woff2"),
+    url(CutiveMono-Regular.woff) format("woff"),
+    url(CutiveMono-Regular.ttf) format("truetype");
   font-weight: normal;
   font-style: normal;
   font-display: fallback;
