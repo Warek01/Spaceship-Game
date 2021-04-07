@@ -106,6 +106,8 @@ export class GameService {
   readonly Asteroid = new EventEmitter<Asteroid>();
   readonly CountAsteroid = new EventEmitter<null>();
   readonly DeleteAsteroid = new EventEmitter<null>();
+  readonly NextBg = new EventEmitter<null>();
+  readonly PrevBg = new EventEmitter<null>();
 
   ship: MovingShip | null = null;
 
@@ -473,6 +475,18 @@ export class GameService {
     )
       document.exitFullscreen();
     else document.documentElement.requestFullscreen();
+  }
+
+  getTextureUrl(src: string): string {
+    return `./assets/img/${src}`;
+  }
+
+  nextBg() {
+    this.NextBg.emit(null);
+  }
+
+  prevBg() {
+    this.PrevBg.emit(null);
   }
 }
 

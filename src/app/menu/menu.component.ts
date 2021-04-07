@@ -13,16 +13,12 @@ export class MenuComponent implements OnInit {
   };
 
   difficulty: string = Difficulty[this.Game.difficulty];
-  texture: string = this._setTexture(
+  texture: string = this.Game.getTextureUrl(
     this.Game.textures.ship[this.Game.currentTexture.ship]
   );
 
-  constructor(public Game: GameService, View: ViewComputingService) {
+  constructor(public Game: GameService, public View: ViewComputingService) {
     this.attributes.height = View.availHeight + "px";
-  }
-
-  private _setTexture(src: string): string {
-    return `./assets/img/${src}`;
   }
 
   nextShipTexture() {
@@ -30,42 +26,28 @@ export class MenuComponent implements OnInit {
 
     if (current === this.Game.textures.ship.length - 1) {
       this.Game.SetShipTexture.emit(0);
-      this.texture = this._setTexture(this.Game.textures.ship[0]);
+      this.texture = this.Game.getTextureUrl(this.Game.textures.ship[0]);
     } else {
       this.Game.SetShipTexture.emit(current + 1);
-      this.texture = this._setTexture(this.Game.textures.ship[current + 1]);
+      this.texture = this.Game.getTextureUrl(
+        this.Game.textures.ship[current + 1]
+      );
     }
   }
 
-  previousShipTexture() {
+  prevShipTexture() {
     const current = this.Game.currentTexture.ship;
 
     if (current === 0) {
       this.Game.SetShipTexture.emit(this.Game.textures.ship.length - 1);
-      this.texture = this._setTexture(this.Game.textures.ship[this.Game.textures.ship.length - 1]);
+      this.texture = this.Game.getTextureUrl(
+        this.Game.textures.ship[this.Game.textures.ship.length - 1]
+      );
     } else {
       this.Game.SetShipTexture.emit(current - 1);
-      this.texture = this._setTexture(this.Game.textures.ship[current - 1]);
-    }
-  }
-
-  nextBgTexture() {
-    const current = this.Game.currentTexture.bg;
-
-    if (current === this.Game.textures.bg.length - 1) {
-      this.Game.SetBgTexture.emit(0);
-    } else {
-      this.Game.SetBgTexture.emit(current + 1);
-    }
-  }
-
-  previousSBgTexture() {
-    const current = this.Game.currentTexture.bg;
-
-    if (current === 0) {
-      this.Game.SetBgTexture.emit(this.Game.textures.bg.length - 1);
-    } else {
-      this.Game.SetBgTexture.emit(current - 1);
+      this.texture = this.Game.getTextureUrl(
+        this.Game.textures.ship[current - 1]
+      );
     }
   }
 

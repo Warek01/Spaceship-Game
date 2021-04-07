@@ -10,6 +10,7 @@ import { GameComponent } from "./game/game.component";
 import { HttpClientModule } from "@angular/common/http";
 import { HelpWindowComponent } from './app-windows/help/help-window.component';
 import { ConfigComponent } from './app-windows/config/config.component';
+import { BackgroundComponent } from './background/background.component';
 
 @NgModule({
   declarations: [
@@ -20,6 +21,7 @@ import { ConfigComponent } from './app-windows/config/config.component';
     GameComponent,
     HelpWindowComponent,
     ConfigComponent,
+    BackgroundComponent,
   ],
   imports: [BrowserModule, AppRoutingModule, HttpClientModule],
   providers: [HttpClientModule],

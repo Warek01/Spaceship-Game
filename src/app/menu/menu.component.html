@@ -4,7 +4,7 @@
     <div class="config">
       <img class="ship-texture" [src]="texture" alt="">
       <div class="btn-container">
-        <button (click)="previousShipTexture()">
+        <button (click)="prevShipTexture()">
           <img src="../../assets/img/arrow_1.png" alt="" srcset="" class="left-arrow">
         </button>
         <button (click)="nextShipTexture()">
@@ -37,10 +37,10 @@
         background
       </p>
       <div class="btn-container">
-        <button (click)="previousSBgTexture()">
+        <button (click)="Game.prevBg()">
           <img src="../../assets/img/arrow_1.png" alt="" srcset="" class="left-arrow">
         </button>
-        <button (click)="nextBgTexture()">
+        <button (click)="Game.nextBg()">
           <img src="../../assets/img/arrow_1.png" alt="" srcset="" class="right-arrow">
         </button>
       </div>
