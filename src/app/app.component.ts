@@ -2,8 +2,6 @@ import {
   AfterViewInit,
   Component,
   ComponentFactoryResolver,
-  ComponentRef,
-  HostBinding,
   HostListener,
   OnInit,
   ViewContainerRef,
@@ -17,8 +15,9 @@ import {
   AppWindow,
   AppWindowRef,
 } from "./services/windows.service";
-import $ from "jquery";
 import { HelpWindowComponent } from "./app-windows/help/help-window.component";
+import $ from "jquery";
+import "./global";
 
 @Component({
   selector: "app-root",
@@ -69,16 +68,16 @@ export class AppComponent implements OnInit, AfterViewInit {
       this.WinService.registerWindow(wd);
     });
 
-    this.Game.currentScore.subscribe((score) => {
+    this.Game.emitters.currentScore.subscribe((score) => {
       this.currentScore = score;
     });
 
-    this.Game.bestScore.subscribe((score) => {
+    this.Game.emitters.bestScore.subscribe((score) => {
       this.bestScore = score;
       this.isBestScore = true;
     });
 
-    this.Game.CurrentGameState.subscribe((state) => {
+    this.Game.emitters.currentGameState.subscribe((state) => {
       this.currentGameState = state;
     });
   }

@@ -25,10 +25,10 @@ export class MenuComponent implements OnInit {
     const current = this.Game.currentTexture.ship;
 
     if (current === this.Game.textures.ship.length - 1) {
-      this.Game.SetShipTexture.emit(0);
+      this.Game.emitters.setShipTexture.emit(0);
       this.texture = this.Game.getTextureUrl(this.Game.textures.ship[0]);
     } else {
-      this.Game.SetShipTexture.emit(current + 1);
+      this.Game.emitters.setShipTexture.emit(current + 1);
       this.texture = this.Game.getTextureUrl(
         this.Game.textures.ship[current + 1]
       );
@@ -39,12 +39,12 @@ export class MenuComponent implements OnInit {
     const current = this.Game.currentTexture.ship;
 
     if (current === 0) {
-      this.Game.SetShipTexture.emit(this.Game.textures.ship.length - 1);
+      this.Game.emitters.setShipTexture.emit(this.Game.textures.ship.length - 1);
       this.texture = this.Game.getTextureUrl(
         this.Game.textures.ship[this.Game.textures.ship.length - 1]
       );
     } else {
-      this.Game.SetShipTexture.emit(current - 1);
+      this.Game.emitters.setShipTexture.emit(current - 1);
       this.texture = this.Game.getTextureUrl(
         this.Game.textures.ship[current - 1]
       );
@@ -55,23 +55,23 @@ export class MenuComponent implements OnInit {
     switch (this.difficulty) {
       case Difficulty[Difficulty.Test]:
         this.difficulty = Difficulty[Difficulty.Easy];
-        this.Game.SetDifficulty.emit(Difficulty.Easy);
+        this.Game.emitters.setDifficulty.emit(Difficulty.Easy);
         break;
       case Difficulty[Difficulty.Easy]:
         this.difficulty = Difficulty[Difficulty.Medium];
-        this.Game.SetDifficulty.emit(Difficulty.Medium);
+        this.Game.emitters.setDifficulty.emit(Difficulty.Medium);
         break;
       case Difficulty[Difficulty.Medium]:
         this.difficulty = Difficulty[Difficulty.Hard];
-        this.Game.SetDifficulty.emit(Difficulty.Hard);
+        this.Game.emitters.setDifficulty.emit(Difficulty.Hard);
         break;
       case Difficulty[Difficulty.Hard]:
         this.difficulty = Difficulty[Difficulty.Challenging];
-        this.Game.SetDifficulty.emit(Difficulty.Challenging);
+        this.Game.emitters.setDifficulty.emit(Difficulty.Challenging);
         break;
       case Difficulty[Difficulty.Challenging]:
         this.difficulty = Difficulty[Difficulty.Test];
-        this.Game.SetDifficulty.emit(Difficulty.Test);
+        this.Game.emitters.setDifficulty.emit(Difficulty.Test);
         break;
     }
   }
@@ -80,23 +80,23 @@ export class MenuComponent implements OnInit {
     switch (this.difficulty) {
       case Difficulty[Difficulty.Test]:
         this.difficulty = Difficulty[Difficulty.Challenging];
-        this.Game.SetDifficulty.emit(Difficulty.Challenging);
+        this.Game.emitters.setDifficulty.emit(Difficulty.Challenging);
         break;
       case Difficulty[Difficulty.Challenging]:
         this.difficulty = Difficulty[Difficulty.Hard];
-        this.Game.SetDifficulty.emit(Difficulty.Hard);
+        this.Game.emitters.setDifficulty.emit(Difficulty.Hard);
         break;
       case Difficulty[Difficulty.Hard]:
         this.difficulty = Difficulty[Difficulty.Medium];
-        this.Game.SetDifficulty.emit(Difficulty.Medium);
+        this.Game.emitters.setDifficulty.emit(Difficulty.Medium);
         break;
       case Difficulty[Difficulty.Medium]:
         this.difficulty = Difficulty[Difficulty.Easy];
-        this.Game.SetDifficulty.emit(Difficulty.Easy);
+        this.Game.emitters.setDifficulty.emit(Difficulty.Easy);
         break;
       case Difficulty[Difficulty.Easy]:
         this.difficulty = Difficulty[Difficulty.Test];
-        this.Game.SetDifficulty.emit(Difficulty.Test);
+        this.Game.emitters.setDifficulty.emit(Difficulty.Test);
         break;
     }
   }

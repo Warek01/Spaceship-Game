@@ -1,5 +1,8 @@
-<div class="main" 
-[style.backgroundImage]="mainBgUrl" [hidden]="!mainShown"></div>
-
-<div class="loader" 
-[style.backgroundImage]="loaderBgUrl" [hidden]="!loaderShown"></div>
+<img 
+  alt="" 
+  class="background"
+  *ngFor="let url of bgUrls; index as i" 
+  [src]="url" 
+  [hidden]="i + 1 !== bgIndex"
+  (load)="i === 0? disableBgImg() : null"
+>

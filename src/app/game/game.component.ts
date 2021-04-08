@@ -1,6 +1,7 @@
 import {
   AfterViewInit,
   Component,
+  HostListener,
   Input,
   OnDestroy,
   OnInit,
@@ -19,6 +20,10 @@ import $ from "jquery";
   selector: "app-game",
   templateUrl: "./game.component.html",
   styleUrls: ["./game.component.scss"],
+  host: {
+    "(window:keydown)": "_onKeyDown($event)",
+    "(window:keyup)": "_onKeyUp($event)",
+  },
 })
 export class GameComponent implements OnInit, OnDestroy, AfterViewInit {
   private _shipElement!: JQuery<HTMLDivElement>;
@@ -39,9 +44,6 @@ export class GameComponent implements OnInit, OnDestroy, AfterViewInit {
     this.height = View.availHeight + "px";
 
     this.Game.launch();
-    $(window)
-      .keydown(this.Game.trackKeyDown(this))
-      .keyup(this.Game.trackKeyUp(this));
   }
 
   private renderAsteroid(asteroid: Asteroid) {
@@ -80,8 +82,16 @@ export class GameComponent implements OnInit, OnDestroy, AfterViewInit {
   }
 
   private removeAsteroid(asteroidObject: JQuery<HTMLDivElement>) {
-    this.Game.CountAsteroid.emit(null);
+    this.Game.emitters.countAsteroid.emit(null);
     asteroidObject.remove();
+  }
+
+  private _onKeyDown(event: KeyboardEvent) {
+    this.Game.track.keyDown(this)(event);
+  }
+
+  private _onKeyUp(event: KeyboardEvent) {
+    this.Game.track.keyUp(this)(event);
   }
 
   ngOnInit() {}
@@ -107,15 +117,10 @@ export class GameComponent implements OnInit, OnDestroy, AfterViewInit {
         y: this.View.availHeight / 2 - this._shipRadius,
       });
 
-    this.Game.Asteroid.subscribe((asteroid) => {
+    this.Game.emitters.asteroid.subscribe((asteroid) => {
       this.renderAsteroid(asteroid);
     });
   }
 
-  ngOnDestroy() {
-    $(window).off({
-      keydown: this.Game.trackKeyDown(this),
-      keyup: this.Game.trackKeyUp(this),
-    });
-  }
+  ngOnDestroy() {}
 }

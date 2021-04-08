@@ -4,13 +4,11 @@
   z-index: -1;
 }
 
-.main,
-.loader {
+.background {
   position: absolute;
   width: 100vw;
   height: 100vh;
-  background-repeat: no-repeat;
-  background-position: center;
-  background-size: cover;
   z-index: -1;
+  object-fit: cover;
+  object-position: center;
 }

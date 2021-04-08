@@ -72,7 +72,15 @@ export class GameService {
       "game_bg_5.jpg",
       "game_bg_6.jpg",
     ],
-    ship: ["ship_1.png", "ship_2.png", "ship_3.png"],
+    ship: [
+      "ship_1.png",
+      "ship_2.png",
+      "ship_3.png",
+      "ship_4.png",
+      "ship_5.png",
+      "ship_6.png",
+      "ship_7.png",
+    ],
     asteroid: [
       "asteroid_1.png",
       "asteroid_2.png",
@@ -87,6 +95,9 @@ export class GameService {
     ],
   };
 
+  ship: MovingShip | null = null;
+  difficulty: Difficulty = Difficulty.Medium;
+
   currentTexture: {
     bg: number;
     ship: number;
@@ -94,28 +105,27 @@ export class GameService {
     bg: 0,
     ship: 0,
   };
-  difficulty: Difficulty = Difficulty.Medium;
 
-  readonly currentScore = new EventEmitter<number>();
-  readonly bestScore = new EventEmitter<number>();
-  readonly shipPosition = new EventEmitter<Position>();
-  readonly CurrentGameState = new EventEmitter<GameState>();
-  readonly SetDifficulty = new EventEmitter<Difficulty>();
-  readonly SetShipTexture = new EventEmitter<number>();
-  readonly SetBgTexture = new EventEmitter<number>();
-  readonly Asteroid = new EventEmitter<Asteroid>();
-  readonly CountAsteroid = new EventEmitter<null>();
-  readonly DeleteAsteroid = new EventEmitter<null>();
-  readonly NextBg = new EventEmitter<null>();
-  readonly PrevBg = new EventEmitter<null>();
-
-  ship: MovingShip | null = null;
+  readonly emitters = {
+    currentScore: new EventEmitter<number>(),
+    bestScore: new EventEmitter<number>(),
+    shipPosition: new EventEmitter<Position>(),
+    currentGameState: new EventEmitter<GameState>(),
+    setDifficulty: new EventEmitter<Difficulty>(),
+    setShipTexture: new EventEmitter<number>(),
+    setBgTexture: new EventEmitter<number>(),
+    asteroid: new EventEmitter<Asteroid>(),
+    countAsteroid: new EventEmitter<null>(),
+    deleteAsteroid: new EventEmitter<null>(),
+    nextBg: new EventEmitter<null>(),
+    prevBg: new EventEmitter<null>(),
+  };
 
   readonly set = {
     _self: this,
 
     asteroidRadius(r: number, spread?: number) {
-      if (r > 0 && r < this._self._View.availHeight / 8) this._self._r = r * 2;
+      if (r > 0 && r < this._self.View.availHeight / 8) this._self._r = r * 2;
       if (spread && spread >= 0) this._self._r_spread = spread;
 
       return this;
@@ -180,33 +190,24 @@ export class GameService {
 
       const R = ship.radius || this._self._R;
       const shipSpeed = this._self._shipSpeed;
+      const self = this._self;
 
-      this._self.ship = {
+      self.ship = {
         element: ship.element,
         pos: {
           x: ship.pos.x,
           y: ship.pos.y,
         },
-        bounds: {
-          top: {
-            x: 0, // temp
-            y: 0,
-          },
-          bottom: {
-            x: 0, // temp
-            y: this._self._View.availHeight - R * 2,
-          },
-        },
         movingSpeed: shipSpeed,
         moveDown() {
           const nextPos = this.element.offset()!.top + this.movingSpeed;
 
-          if (nextPos < this.bounds.bottom.y) {
+          if (nextPos < self.View.availHeight - R * 2) {
             this.pos.y = nextPos;
             this.element.css("top", nextPos);
           } else {
-            this.pos.y = this.bounds.bottom.y;
-            this.element.css("top", this.bounds.bottom.y);
+            this.pos.y = self.View.availHeight - R * 2;
+            this.element.css("top", self.View.availHeight - R * 2);
           }
         },
         moveUp() {
@@ -216,59 +217,100 @@ export class GameService {
             this.pos.y = nextPos;
             this.element.css("top", nextPos);
           } else {
-            this.pos.y = this.bounds.top.y;
-            this.element.css("top", this.bounds.top.y);
+            this.pos.y = self.View.headerHeight - R * 2;
+            this.element.css("top", self.View.headerHeight - R * 2);
           }
         },
       };
 
-      this._self._shipTextureElement = ship.element.find(".texture") as any;
+      self._shipTextureElement = ship.element.find(".texture") as any;
 
       ship.radius && this.shipRadius(ship.radius);
       ship.texture && this._shipTexture(ship.texture);
 
-      this._self
-        .ship!.element.width(this._self._R * 2)
-        .height(this._self._R * 2);
+      self.ship!.element.width(self._R * 2).height(self._R * 2);
 
-      this._self._shipTransitionDuration = this._self.ship.element.css(
+      self._shipTransitionDuration = self.ship.element.css(
         "transition-duration"
       );
 
-      this._shipTexture(
-        this._self.textures.ship[this._self.currentTexture.ship]
-      );
+      this._shipTexture(self.textures.ship[self.currentTexture.ship]);
 
       return this;
     },
   };
 
+  readonly track = {
+    _self: this,
+    keyDown(component: GameComponent) {
+      const self = this._self;
+      return function (this: GameComponent, e: KeyboardEvent) {
+        if (
+          this.Game._currentGameState === GameState.InGame &&
+          this.Game.ship &&
+          self._currentKeyHeld !== e.key.toLowerCase()
+        ) {
+          clearInterval(self._intervals.keyDown);
+          self._currentKeyHeld = e.key.toLowerCase();
+
+          switch (e.key.toLowerCase()) {
+            case "w":
+              self._intervals.keyDown = setInterval(() => {
+                self.ship!.moveUp();
+              }, 25);
+              break;
+
+            case "s":
+              self._intervals.keyDown = setInterval(() => {
+                self.ship!.moveDown();
+              }, 25);
+              break;
+          }
+        }
+      }.bind(component);
+    },
+
+    keyUp(component: GameComponent) {
+      const self = this._self;
+      return function (this: GameComponent, e: KeyboardEvent) {
+        if (
+          this.Game._currentGameState === GameState.InGame &&
+          this.Game.ship &&
+          self._currentKeyHeld
+        ) {
+          self._currentKeyHeld = null;
+          clearInterval(self._intervals.keyDown);
+        }
+      }.bind(component);
+    },
+  };
+
   constructor(
-    private _Router: Router,
-    private _Route: ActivatedRoute,
-    private _View: ViewComputingService
+    private Router: Router,
+    private Route: ActivatedRoute,
+    private View: ViewComputingService
   ) {
-    this.CurrentGameState.subscribe((state) => {
+    this.emitters.currentGameState.subscribe((state) => {
       this._currentGameState = state;
     });
 
-    this.CountAsteroid.subscribe((val) => {
+    this.emitters.countAsteroid.subscribe((val) => {
       this._totalAsteroids++;
     });
 
-    this.DeleteAsteroid.subscribe((val) => {
+    this.emitters.deleteAsteroid.subscribe((val) => {
       this._removedAsteroids++;
     });
 
-    this.SetDifficulty.subscribe((diff) => {
+    this.emitters.setDifficulty.subscribe((diff) => {
       this.difficulty = diff;
     });
 
-    this.SetShipTexture.subscribe((index) => {
+    this.emitters.setShipTexture.subscribe((index) => {
       this.currentTexture.ship = index;
     });
 
-    this.SetBgTexture.subscribe((index) => {
+    this.emitters.setBgTexture.subscribe((index) => {
       this.currentTexture.bg = index;
       $(document.body).css(
         "background-image",
@@ -285,7 +327,7 @@ export class GameService {
   };
 
   private _changeGameState(state: GameState) {
-    this.CurrentGameState.emit(state);
+    this.emitters.currentGameState.emit(state);
     this._currentGameState = state;
   }
 
@@ -306,7 +348,6 @@ export class GameService {
 
   launch() {
     const difficulty = this.difficulty;
-    console.log(difficulty);
     if (this._currentGameState === GameState.InGame && !this._isStopped)
       throw "Launch Error";
 
@@ -321,12 +362,12 @@ export class GameService {
     this._intervals.asteroid = null;
 
     this._intervals.asteroid = setInterval(() => {
-      this.Asteroid.emit(this.generateAsteroid());
+      this.emitters.asteroid.emit(this.generateAsteroid());
     }, 3000 / (this._genRate + this.difficulty));
 
     this._intervals.score = setInterval(() => {
       this._currentScore++;
-      this.currentScore.emit(this._currentScore);
+      this.emitters.currentScore.emit(this._currentScore);
     }, this._scoreRate);
 
     this._intervals.asteroidClear = setInterval(() => {
@@ -352,7 +393,7 @@ export class GameService {
           const elem = asteroids[i];
           const r = parseFloat((elem as HTMLDivElement).style.width!) / 2;
 
-          if (r && R && r + R > this._View.distanceBetween(elem, ship!)) {
+          if (r && R && r + R > this.View.distanceBetween(elem, ship!)) {
             this._isStopped = true;
             this.stop();
             clearTimeout(timerId);
@@ -370,7 +411,7 @@ export class GameService {
       this._bestScore = this._currentScore;
       this._currentScore = 0;
 
-      this.bestScore.emit(this._bestScore);
+      this.emitters.bestScore.emit(this._bestScore);
     }
 
     this._isStopped = true;
@@ -392,9 +433,9 @@ export class GameService {
     return {
       texture: `asteroid_${+(Math.random() * 9 + 1).toFixed(0)}.png`,
       /** Render height (right offscreen) */
-      initialY: +(Math.random() * this._View.availHeight).toFixed(0),
+      initialY: +(Math.random() * this.View.availHeight).toFixed(0),
       /** End height (left offscreen) */
-      finalY: +(Math.random() * this._View.availHeight).toFixed(0),
+      finalY: +(Math.random() * this.View.availHeight).toFixed(0),
       /** Radius from _r to _r + random(0 to _spread) px */
       radius: +(Math.random() * this._r_spread + this._r).toFixed(0),
       /** px/s  450 - 550*/
@@ -412,58 +453,16 @@ export class GameService {
       this._changeGameState(state);
       switch (state) {
         case GameState.Menu:
-          this._Router.navigate(["/menu"]);
+          this.Router.navigate(["/menu"]);
           break;
         case GameState.InGame:
-          this._Router.navigate(["/game"]);
+          this.Router.navigate(["/game"]);
           break;
         case GameState.EndScreen:
-          this._Router.navigate(["/end-screen"]);
+          this.Router.navigate(["/end-screen"]);
           break;
       }
     }
-  }
-
-  trackKeyDown(component: GameComponent) {
-    const self = this;
-    return function (this: GameComponent, e: JQuery.KeyDownEvent) {
-      if (
-        this.Game._currentGameState === GameState.InGame &&
-        this.Game.ship &&
-        self._currentKeyHeld !== e.key.toLowerCase()
-      ) {
-        clearInterval(self._intervals.keyDown);
-        self._currentKeyHeld = e.key.toLowerCase();
-
-        switch (e.key.toLowerCase()) {
-          case "w":
-            self._intervals.keyDown = setInterval(() => {
-              self.ship!.moveUp();
-            }, 25);
-            break;
-
-          case "s":
-            self._intervals.keyDown = setInterval(() => {
-              self.ship!.moveDown();
-            }, 25);
-            break;
-        }
-      }
-    }.bind(component);
-  }
-
-  trackKeyUp(component: GameComponent) {
-    const self = this;
-    return function (this: GameComponent, e: JQuery.KeyUpEvent) {
-      if (
-        this.Game._currentGameState === GameState.InGame &&
-        this.Game.ship &&
-        self._currentKeyHeld
-      ) {
-        self._currentKeyHeld = null;
-        clearInterval(self._intervals.keyDown);
-      }
-    }.bind(component);
   }
 
   toggleFullscreen() {
@@ -475,6 +474,8 @@ export class GameService {
     )
       document.exitFullscreen();
     else document.documentElement.requestFullscreen();
+
+    console.log(screen.height);
   }
 
   getTextureUrl(src: string): string {
@@ -482,11 +483,11 @@ export class GameService {
   }
 
   nextBg() {
-    this.NextBg.emit(null);
+    this.emitters.nextBg.emit(null);
   }
 
   prevBg() {
-    this.PrevBg.emit(null);
+    this.emitters.prevBg.emit(null);
   }
 }
 
@@ -503,10 +504,6 @@ export interface Ship {
 }
 
 export interface MovingShip extends Ship {
-  bounds: {
-    top: Position;
-    bottom: Position;
-  };
   movingSpeed: number;
   moveUp(): void;
   moveDown(): void;
@@ -528,11 +525,3 @@ export interface ShipConfig {
   radius?: number;
   speed?: number;
 }
-
-// declare global {
-//   interface Array<T> {
-//     findAndreturnIndex(src: T): number;
-//   }
-// }
-
-// Array.prototype.findIndex
