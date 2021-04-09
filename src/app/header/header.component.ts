@@ -5,15 +5,11 @@ import {
   OnInit,
   SimpleChanges,
   EventEmitter,
-  Output,
-  HostBinding,
-  HostListener,
 } from "@angular/core";
 import { NavigationEnd, Router } from "@angular/router";
-import { HelpWindowComponent } from "../help-window/help-window.component";
 import { GameService, GameState } from "../services/game.service";
 import { ViewComputingService } from "../services/viewComputing.service";
-import { WindowsService, AppWindow } from "../services/windows.service";
+import { WindowsService } from "../services/windows.service";
 
 @Component({
   selector: "app-header",
@@ -21,13 +17,11 @@ import { WindowsService, AppWindow } from "../services/windows.service";
   styleUrls: ["./header.component.scss"],
 })
 export class HeaderComponent implements OnInit, OnChanges {
-  private _intervals: {
-    bestScore: any;
-  } = {
+  private _intervals: any = {
     bestScore: null,
   };
 
-  GameState = GameService.GameState;
+  GameState = GameState;
   attributes = {
     display: "flex",
     height: "0px",
@@ -58,6 +52,10 @@ export class HeaderComponent implements OnInit, OnChanges {
 
   openHelpWindow() {
     this.WinService.open("help");
+  }
+
+  openSettingsWindow() {
+    this.WinService.open("settings");
   }
 
   ngOnInit() {

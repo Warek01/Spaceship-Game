@@ -1,4 +1,4 @@
-@use "../../scss/defaults" as def;
+@use "../../../scss/defaults" as def;
 
 :host {
   position: absolute;
@@ -29,8 +29,8 @@
   display: block;
   width: 100%;
   height: 100%;
-  background-color: #34495e;
-  border: 1px solid #fff;
+  background-color: def.$window-bg;
+  border: 1px solid def.$button-white-color;
 }
 
 .toolbar {
@@ -39,7 +39,7 @@
   width: 100%;
   height: 35px;
   grid-template-rows: 100%;
-  grid-template-columns: repeat(3, 33.3333%);
+  grid-template-columns: 25% 50% 25%;
   border-bottom: 1px solid rgba(#000, 0.25);
 
   .right {
@@ -47,18 +47,36 @@
     grid-template-rows: 100%;
     grid-template-columns: repeat(3, 33.3333%);
 
-    .close {
+    button {
+      display: flex;
+      justify-content: center;
+      align-items: center;
       position: relative;
       width: 100%;
       height: 100%;
       border-radius: 0;
-      background-color: def.$button-red-color;
       cursor: pointer;
+    }
+
+    .full-screen {
+      background-color: def.$button-white-color;
 
       &:hover {
-        display: flex;
-        justify-content: center;
-        align-items: center;
+        background-color: def.$button-white-hover-color;
+      }
+
+      .rect {
+        width: 13px;
+        height: 13px;
+        border: 1px solid #000;
+        // border-top-width: 2px;
+      }
+    }
+    
+    .close {
+      background-color: def.$button-red-color;
+
+      &:hover {
         background-color: def.$button-red-hover-color;
       }
 

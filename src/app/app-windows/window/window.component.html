@@ -14,7 +14,9 @@
 
       <div class="right">
         <div></div>
-        <div></div>
+        <button class="full-screen custom">
+          <div class="rect"></div>
+        </button>
         <button class="close custom" (click)="close()">
           <img src="../../assets/img/plus.png" alt="" srcset="">
         </button>
@@ -23,21 +25,7 @@
 
     <div class="content-area">
       <div class="content">
-        <p>
-          Press <kbd>esc</kbd> to close window.
-        </p>
-        <p>
-          Press <kbd>h</kbd> to open help window.
-        </p>
-        <p>
-          Press <kbd>f</kbd> to enter fullscreen.
-        </p>
-        <p>
-          Control ship with <kbd>w</kbd> and <kbd>s</kbd>.
-        </p>
-        <p>
-          App is currently in development.
-        </p>
+        <ng-content></ng-content>
       </div>
     </div>
 

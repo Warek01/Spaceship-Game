@@ -8,9 +8,11 @@ import { HeaderComponent } from "./header/header.component";
 import { EndScreenComponent } from "./end-screen/end-screen.component";
 import { GameComponent } from "./game/game.component";
 import { HttpClientModule } from "@angular/common/http";
-import { HelpWindowComponent } from './help-window/help-window.component';
-import { BackgroundComponent } from './background/background.component';
-import { GameAudioComponent } from './game-audio/game-audio.component';
+import { HelpWindowComponent } from "./app-windows/help/help.component";
+import { BackgroundComponent } from "./background/background.component";
+import { GameAudioComponent } from "./game-audio/game-audio.component";
+import { SettingsWindowComponent } from "./app-windows/settings/settings.component";
+import { WindowComponent } from "./app-windows/window/window.component";
 
 @NgModule({
   declarations: [
@@ -22,6 +24,8 @@ import { GameAudioComponent } from './game-audio/game-audio.component';
     HelpWindowComponent,
     BackgroundComponent,
     GameAudioComponent,
+    SettingsWindowComponent,
+    WindowComponent,
   ],
   imports: [BrowserModule, AppRoutingModule, HttpClientModule],
   providers: [HttpClientModule],

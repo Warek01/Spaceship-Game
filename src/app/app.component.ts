@@ -14,9 +14,10 @@ import {
   AppWindow,
   AppWindowRef,
 } from "./services/windows.service";
-import { HelpWindowComponent } from "./help-window/help-window.component";
+import { HelpWindowComponent } from "./app-windows/help/help.component";
 
 import "./global";
+import { SettingsWindowComponent } from "./app-windows/settings/settings.component";
 
 @Component({
   selector: "app-root",
@@ -35,6 +36,7 @@ export class AppComponent implements OnInit, AfterViewInit {
   private _openedWindows: AppWindowRef[] = [];
   private _registeredWindows: AppWindow[] = [
     { id: "help", component: HelpWindowComponent },
+    { id: "settings", component: SettingsWindowComponent },
   ];
 
   title = "Spaceship";
@@ -82,6 +84,8 @@ export class AppComponent implements OnInit, AfterViewInit {
   };
 
   ngOnInit() {
+    for (let i = 0; i < 10; i++) console.log(this.Game.generateAsteroid().rotation);
+
     this._registeredWindows.forEach((wd) => {
       this.WdService.registerWindow(wd);
     });

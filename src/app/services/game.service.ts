@@ -19,19 +19,20 @@ export enum Difficulty {
   Challenging = 9,
 }
 
+export enum TransitionType {
+  "linear",
+  "ease",
+  "ease-in",
+  "ease-in-out",
+}
+
 @Injectable({
   providedIn: "root",
 })
 export class GameService {
   static readonly GameState = GameState;
 
-  private _intervals: {
-    score: any;
-    asteroid: any;
-    asteroidClear: any;
-    distance: any;
-    keyDown: any;
-  } = {
+  private _intervals: any = {
     score: null,
     asteroid: null,
     asteroidClear: null,
@@ -43,28 +44,34 @@ export class GameService {
   private _currentScore = 0;
   private _bestScore = 0;
   private _genRate = 1;
-  private _scoreRate = 100; // ms
+  /** (ms) */
+  private _scoreRate = 100;
   private _isStopped = false;
+  /** Total removed asteroids */
   private _removedAsteroids = 0;
+  /** Total asteroids passed */
   private _totalAsteroids = 0;
   private _currentKeyHeld: string | null = null;
-  private _r = 40; // asteroid radius (px)
-  private _r_spread = 20; // asteroid radius spread (px)
-  private _s = 450; // asteroid speed
-  private _s_spread = 100; // asteroid speed spread
-  private _R = 30; // ship radius (px)
-  private _shipSpeed = 20; // px/tick
+  /** Asteroid radius (px) */
+  private _r = 40;
+  /** Asteroid radius spread (px) */
+  private _r_spread = 20;
+  /** asteroid speed (px/s) */
+  private _s = 450;
+  /** Asteroid speed spread (px) */
+  private _s_spread = 100;
+  /** Ship radius (px) */
+  private _R = 30;
+  /** (px/tick) */
+  private _shipSpeed = 20;
   private _shipTextureElement!: JQuery<HTMLDivElement>;
+  /** Where is user now */
   private _currentGameState = GameState.Menu;
   private _shipTransitionDuration!: string;
   private _gameStartTimestamp!: number;
   private _gameEndTimestamp!: number;
 
-  readonly textures: {
-    bg: string[];
-    ship: string[];
-    asteroid: string[];
-  } = {
+  readonly textures: GameTexturesContainer = {
     bg: [
       "game_bg_1.jpg",
       "game_bg_2.jpg",
@@ -99,6 +106,7 @@ export class GameService {
   ship: MovingShip | null = null;
   difficulty: Difficulty = Difficulty.Medium;
 
+  /** Currently used texture index */
   currentTexture: {
     bg: number;
     ship: number;
@@ -124,6 +132,7 @@ export class GameService {
     endGame: new EventEmitter<null>(),
   };
 
+  /** Setters */
   readonly set = {
     _self: this,
 
@@ -243,6 +252,7 @@ export class GameService {
     },
   };
 
+  /** Listeners */
   readonly track = {
     _self: this,
     keyDown(component: GameComponent) {
@@ -288,6 +298,7 @@ export class GameService {
     },
   };
 
+  /** Game sounds map */
   readonly sounds = new Map<SoundId, string>([
     ["explosion", "explosion_1.wav"],
     ["launch", "launch_1.wav"],
@@ -462,16 +473,25 @@ export class GameService {
   continue() {}
 
   generateAsteroid(): Asteroid {
+    const rotation: RotationZ | null = !+Math.random().toFixed(0) // true/false
+      ? {
+          degrees: +(Math.random() * 720 + 15).toFixed(0),
+          transitionSpeed: +(Math.random() * 2000 + 1000).toFixed(0),
+          type: +(Math.random() * 4).toFixed(0),
+        }
+      : null;
+
     return {
       texture: `asteroid_${+(Math.random() * 9 + 1).toFixed(0)}.png`,
       /** Render height (right offscreen) */
-      initialY: +(Math.random() * this.View.availHeight).toFixed(0),
+      initialY: +(Math.random() * (this.View.availHeight + this._r)).toFixed(0),
       /** End height (left offscreen) */
-      finalY: +(Math.random() * this.View.availHeight).toFixed(0),
+      finalY: +(Math.random() * (this.View.availHeight + this._r)).toFixed(0),
       /** Radius from _r to _r + random(0 to _spread) px */
       radius: +(Math.random() * this._r_spread + this._r).toFixed(0),
       /** px/s  450 - 550*/
       velocity: +(Math.random() * this._s_spread + this._s).toFixed(0),
+      rotation,
     };
   }
 
@@ -550,6 +570,12 @@ export interface GameSound {
   volume: number;
 }
 
+export interface GameTexturesContainer {
+  bg: string[];
+  ship: string[];
+  asteroid: string[];
+}
+
 export interface Position {
   x: number;
   y: number;
@@ -570,9 +596,18 @@ export interface Asteroid {
   texture: string;
   radius: number;
   velocity: number;
-  rotation?: string;
   initialY: number;
   finalY: number;
+  rotation: RotationZ | null;
+}
+
+export interface RotationZ {
+  /** @type deg */
+  degrees: number;
+  /** @type miliseconds */
+  transitionSpeed: number;
+  /** ease, ease-in, ease-in-out, linear */
+  type: TransitionType;
 }
 
 export interface ShipConfig {
