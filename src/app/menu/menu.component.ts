@@ -1,4 +1,4 @@
-import { Component, OnInit, Output, EventEmitter } from "@angular/core";
+import { Component, OnInit } from "@angular/core";
 import { Difficulty, GameService } from "../services/game.service";
 import { ViewComputingService } from "../services/viewComputing.service";
 

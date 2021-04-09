@@ -10,7 +10,7 @@ import {
   HostListener,
 } from "@angular/core";
 import { NavigationEnd, Router } from "@angular/router";
-import { HelpWindowComponent } from "../app-windows/help/help-window.component";
+import { HelpWindowComponent } from "../help-window/help-window.component";
 import { GameService, GameState } from "../services/game.service";
 import { ViewComputingService } from "../services/viewComputing.service";
 import { WindowsService, AppWindow } from "../services/windows.service";

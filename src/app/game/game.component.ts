@@ -15,20 +15,19 @@ import {
 } from "../services/game.service";
 import { ViewComputingService } from "../services/viewComputing.service";
 import $ from "jquery";
+import { fromEvent, Observable, Subscription } from "rxjs";
 
 @Component({
   selector: "app-game",
   templateUrl: "./game.component.html",
   styleUrls: ["./game.component.scss"],
-  host: {
-    "(window:keydown)": "_onKeyDown($event)",
-    "(window:keyup)": "_onKeyUp($event)",
-  },
 })
 export class GameComponent implements OnInit, OnDestroy, AfterViewInit {
   private _shipElement!: JQuery<HTMLDivElement>;
   private _shipPosition!: Position;
   private _shipRadius = 20;
+  private _keyDown!: Subscription;
+  private _keyUp!: Subscription;
 
   asteroids = new Map<number, Asteroid>();
   height!: string;
@@ -86,12 +85,21 @@ export class GameComponent implements OnInit, OnDestroy, AfterViewInit {
     asteroidObject.remove();
   }
 
-  private _onKeyDown(event: KeyboardEvent) {
-    this.Game.track.keyDown(this)(event);
-  }
+  endGame() {
+    let asteroids: JQuery | null = $(".asteroid");
 
-  private _onKeyUp(event: KeyboardEvent) {
-    this.Game.track.keyUp(this)(event);
+    asteroids.css("transition", "0s");
+
+    asteroids.each((i, em) => {
+      $(em).css({
+        top: $(em).css("top"),
+        left: $(em).css("left"),
+      });
+    });
+
+    asteroids = null;
+    this._keyDown.unsubscribe();
+    this._keyUp.unsubscribe();
   }
 
   ngOnInit() {}
@@ -117,8 +125,20 @@ export class GameComponent implements OnInit, OnDestroy, AfterViewInit {
         y: this.View.availHeight / 2 - this._shipRadius,
       });
 
+    this._keyDown = fromEvent<KeyboardEvent>(window, "keydown").subscribe(
+      this.Game.track.keyDown(this)
+    );
+
+    this._keyUp = fromEvent<KeyboardEvent>(window, "keyup").subscribe(
+      this.Game.track.keyUp(this)
+    );
+
     this.Game.emitters.asteroid.subscribe((asteroid) => {
       this.renderAsteroid(asteroid);
+    });
+
+    this.Game.emitters.endGame.subscribe((NULL) => {
+      this.endGame();
     });
   }
 

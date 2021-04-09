@@ -27,7 +27,7 @@
         <button (click)="Game.pause()" *ngIf="currentGameState !== GameState.EndScreen">
           pause
         </button>
-        <button (click)="Game.stop()" *ngIf="currentGameState === GameState.Paused">
+        <button (click)="Game.endGame(0)" *ngIf="currentGameState === GameState.Paused">
           end
         </button>
       </ng-template>

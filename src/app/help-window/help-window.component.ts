@@ -1,5 +1,5 @@
 import { Component, HostBinding, HostListener, OnInit } from "@angular/core";
-import { WindowsService } from "../../services/windows.service";
+import { WindowsService } from "../services/windows.service";
 
 @Component({
   selector: "app-help-window",

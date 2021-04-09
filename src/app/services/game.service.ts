@@ -39,6 +39,7 @@ export class GameService {
     keyDown: null,
   };
 
+  private _rangeCalcTimerId: any = null;
   private _currentScore = 0;
   private _bestScore = 0;
   private _genRate = 1;
@@ -119,6 +120,8 @@ export class GameService {
     deleteAsteroid: new EventEmitter<null>(),
     nextBg: new EventEmitter<null>(),
     prevBg: new EventEmitter<null>(),
+    playSound: new EventEmitter<GameSound>(),
+    endGame: new EventEmitter<null>(),
   };
 
   readonly set = {
@@ -285,6 +288,19 @@ export class GameService {
     },
   };
 
+  readonly sounds = new Map<SoundId, string>([
+    ["explosion", "explosion_1.wav"],
+    ["launch", "launch_1.wav"],
+    ["click-1", "click_1.wav"],
+    ["click-2", "click_2.wav"],
+    ["shoot-1", "shoot_1.wav"],
+    ["shoot-2", "shoot_2.wav"],
+    ["shoot-3", "shoot_3.wav"],
+    ["break", "break_1.wav"],
+    ["notification", "notification_1.wav"],
+    ["regen", "health_recharge_1.wav"],
+  ]);
+
   constructor(
     private Router: Router,
     private Route: ActivatedRoute,
@@ -321,6 +337,7 @@ export class GameService {
 
   static clearIntervals = function (intervalsObject: any) {
     for (const key of Object.keys(intervalsObject)) {
+      if (!intervalsObject[key]) continue;
       clearInterval(intervalsObject[key]);
       intervalsObject[key] = null;
     }
@@ -347,19 +364,21 @@ export class GameService {
   }
 
   launch() {
-    const difficulty = this.difficulty;
     if (this._currentGameState === GameState.InGame && !this._isStopped)
       throw "Launch Error";
 
+    this.playSound("launch");
+    const difficulty = this.difficulty;
+
     this._changeGameState(GameState.InGame);
-    this._isStopped = false;
     GameService.clearIntervals(this._intervals);
+    this._isStopped = false;
 
     this.difficulty = difficulty;
     this._gameStartTimestamp = Date.now();
 
-    clearInterval(this._intervals.asteroid);
-    this._intervals.asteroid = null;
+    // clearInterval(this._intervals.asteroid);
+    // this._intervals.asteroid = null;
 
     this._intervals.asteroid = setInterval(() => {
       this.emitters.asteroid.emit(this.generateAsteroid());
@@ -368,6 +387,7 @@ export class GameService {
     this._intervals.score = setInterval(() => {
       this._currentScore++;
       this.emitters.currentScore.emit(this._currentScore);
+      if (this._currentScore % 100 === 0) this.playSound("notification");
     }, this._scoreRate);
 
     this._intervals.asteroidClear = setInterval(() => {
@@ -382,7 +402,7 @@ export class GameService {
     }, 1000);
 
     let timer: any;
-    let timerId: any = setTimeout(
+    this._rangeCalcTimerId = setTimeout(
       (timer = () => {
         if (this._isStopped) return;
         const asteroids = document.querySelectorAll(".asteroid");
@@ -394,13 +414,11 @@ export class GameService {
           const r = parseFloat((elem as HTMLDivElement).style.width!) / 2;
 
           if (r && R && r + R > this.View.distanceBetween(elem, ship!)) {
-            this._isStopped = true;
-            this.stop();
-            clearTimeout(timerId);
-            timerId = null;
+            this.shipCollision();
           }
         }
-        if (timerId) timerId = setTimeout(timer, 50);
+        if (this._rangeCalcTimerId)
+          this._rangeCalcTimerId = setTimeout(timer, 50);
       }),
       50
     );
@@ -414,14 +432,28 @@ export class GameService {
       this.emitters.bestScore.emit(this._bestScore);
     }
 
-    this._isStopped = true;
     this._genRate = 1;
     this._scoreRate = 100;
     this._currentScore = 0;
     this._gameEndTimestamp = Date.now();
 
-    GameService.clearIntervals(this._intervals);
     this.navTo(GameState.EndScreen);
+  }
+
+  shipCollision() {
+    this.playSound("explosion");
+    this.endGame();
+  }
+
+  endGame(timeout = 3000) {
+    this.emitters.endGame.emit(null);
+    GameService.clearIntervals(this._intervals);
+
+    this._isStopped = true;
+    clearTimeout(this._rangeCalcTimerId);
+    this._rangeCalcTimerId = null;
+
+    setTimeout(this.stop.bind(this), timeout);
   }
 
   pause() {
@@ -482,6 +514,14 @@ export class GameService {
     return `./assets/img/${src}`;
   }
 
+  getSoundUrl(src: string): string {
+    return `./assets/sounds/${src}`;
+  }
+
+  playSound(id: SoundId, volume = 100) {
+    this.emitters.playSound.emit({ id, volume });
+  }
+
   nextBg() {
     this.emitters.nextBg.emit(null);
   }
@@ -492,6 +532,23 @@ export class GameService {
 }
 
 export type gameMode = "debug" | "release";
+
+export type SoundId =
+  | "click-1"
+  | "click-2"
+  | "launch"
+  | "shoot-1"
+  | "shoot-2"
+  | "shoot-3"
+  | "regen"
+  | "notification"
+  | "break"
+  | "explosion";
+
+export interface GameSound {
+  id: SoundId;
+  volume: number;
+}
 
 export interface Position {
   x: number;
