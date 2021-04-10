@@ -1,4 +1,13 @@
-<div class="container">
+<div 
+  class="container" 
+  [class.extended]="options.isExtended" 
+  [ngStyle]="{
+    'width': options.width, 
+    'height': options.height,
+    'top': options.top
+  }"
+>
+
   <div class="window">
 
     <div class="toolbar">
@@ -14,7 +23,7 @@
 
       <div class="right">
         <div></div>
-        <button class="full-screen custom">
+        <button class="extend-window custom" (click)="options.isExtended? shrink() : extend()">
           <div class="rect"></div>
         </button>
         <button class="close custom" (click)="close()">

@@ -65,6 +65,13 @@
       }
     }
 
+    &:hover {
+
+      .circle {
+        background-color: def.$border-dimgray;
+      }
+    }
+
     .circle {
       position: absolute;
       display: block;
@@ -75,7 +82,8 @@
       background-color: def.$border-gray;
       border: 1px solid def.$border-dimgray;
       z-index: 5;
-      transition: all 300ms ease-out;
+      transition: left 300ms ease-out,
+        background-color 75ms linear;
     }
   }
 }
@@ -94,6 +102,10 @@
     border: none;
     outline: none;
   }
+}
+
+#volume-range {
+  cursor: ew-resize;
 }
 
 /* Chrome, Safari, Edge, Opera */

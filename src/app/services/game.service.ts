@@ -86,6 +86,12 @@ export class GameService {
       "game_bg_4.jpg",
       "game_bg_5.jpg",
       "game_bg_6.jpg",
+      "game_bg_7.jpg",
+      "game_bg_8.jpg",
+      "game_bg_9.jpg",
+      "game_bg_10.jpg",
+      "game_bg_11.jpg",
+      "game_bg_12.jpg",
     ],
     ship: [
       "ship_1.png",

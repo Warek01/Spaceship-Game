@@ -8,19 +8,53 @@
   top: 0;
   width: 100vw;
   height: 100vh;
-  z-index: 100;
+  z-index: 99;
 }
 
 .container {
+  position: relative;
   display: flex;
   justify-content: center;
   align-items: center;
-  width: 60%;
-  height: 80%;
 
-  @media screen and (max-width: 951px) {
-    width: 80%;
-    height: 85%;
+  transition: width 75ms linear, height 75ms linear;
+
+  &:not(.extended) {
+    @media screen and (max-width: 951px) {
+      width: 80%;
+      height: 85%;
+    }
+  }
+
+  &.extended {
+    .window {
+      border: none;
+    }
+
+    .extend-window {
+      .rect {
+        width: 8px !important;
+        height: 8px !important;
+        margin-top: -3px;
+
+        &::after {
+          content: "";
+          position: absolute;
+          width: 8px;
+          height: 8px;
+          margin-left: -8px;
+          margin-top: 2px;
+          border: 1px solid #000;
+          background-color: def.$button-white-color;
+        }
+      }
+
+      &:hover {
+        .rect::after {
+          background-color: def.$button-white-hover-color;
+        }
+      }
+    }
   }
 }
 
@@ -31,6 +65,7 @@
   height: 100%;
   background-color: def.$window-bg;
   border: 1px solid def.$button-white-color;
+  transition: border 75ms ease;
 }
 
 .toolbar {
@@ -58,7 +93,7 @@
       cursor: pointer;
     }
 
-    .full-screen {
+    .extend-window {
       background-color: def.$button-white-color;
 
       &:hover {
@@ -68,11 +103,11 @@
       .rect {
         width: 13px;
         height: 13px;
+        z-index: 5;
         border: 1px solid #000;
-        // border-top-width: 2px;
       }
     }
-    
+
     .close {
       background-color: def.$button-red-color;
 
