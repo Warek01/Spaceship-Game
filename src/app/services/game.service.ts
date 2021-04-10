@@ -32,12 +32,19 @@ export enum TransitionType {
 export class GameService {
   static readonly GameState = GameState;
 
-  private _intervals: any = {
+  private readonly _intervals: any = {
     score: null,
     asteroid: null,
     asteroidClear: null,
     distance: null,
     keyDown: null,
+  };
+
+  private _settings: GameSettings = {
+    sound: {
+      isActive: true,
+      masterVolume: 100,
+    },
   };
 
   private _rangeCalcTimerId: any = null;
@@ -250,6 +257,12 @@ export class GameService {
 
       return this;
     },
+
+    masterVolume(value: number) {
+      if (value >= 0 && value <= 100) {
+        this._self._settings.sound.masterVolume = value;
+      }
+    },
   };
 
   /** Listeners */
@@ -374,6 +387,10 @@ export class GameService {
     ).toFixed(0);
   }
 
+  get settings() {
+    return this._settings;
+  }
+
   launch() {
     if (this._currentGameState === GameState.InGame && !this._isStopped)
       throw "Launch Error";
@@ -448,6 +465,7 @@ export class GameService {
     this._currentScore = 0;
     this._gameEndTimestamp = Date.now();
 
+    this.playSound("break");
     this.navTo(GameState.EndScreen);
   }
 
@@ -526,8 +544,6 @@ export class GameService {
     )
       document.exitFullscreen();
     else document.documentElement.requestFullscreen();
-
-    console.log(screen.height);
   }
 
   getTextureUrl(src: string): string {
@@ -538,8 +554,9 @@ export class GameService {
     return `./assets/sounds/${src}`;
   }
 
-  playSound(id: SoundId, volume = 100) {
-    this.emitters.playSound.emit({ id, volume });
+  playSound(id: SoundId, volume = this._settings.sound.masterVolume) {
+    if (this._settings.sound.isActive)
+      this.emitters.playSound.emit({ id, volume });
   }
 
   nextBg() {
@@ -548,6 +565,14 @@ export class GameService {
 
   prevBg() {
     this.emitters.prevBg.emit(null);
+  }
+
+  disableSound() {
+    this._settings.sound.isActive = false;
+  }
+
+  enableSound() {
+    this._settings.sound.isActive = true;
   }
 }
 
@@ -616,4 +641,11 @@ export interface ShipConfig {
   texture?: string;
   radius?: number;
   speed?: number;
+}
+
+export interface GameSettings {
+  sound: {
+    isActive: boolean;
+    masterVolume: number;
+  };
 }

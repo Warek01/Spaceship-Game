@@ -1,0 +1,109 @@
+@use "../../../scss/defaults" as def;
+
+.option {
+  display: flex;
+  height: 30px;
+  margin-top: 10px;
+  align-items: center;
+
+  &:first-of-type {
+    margin-top: 30px;
+  }
+}
+
+.description {
+  font-size: 1.1rem;
+  cursor: pointer;
+}
+
+.switch-container {
+  position: relative;
+  display: flex;
+  height: 30px;
+  width: 100px;
+  margin-left: 20px;
+  align-items: center;
+  justify-content: center;
+
+  .switch {
+    position: relative;
+    display: flex;
+    width: 50px;
+    height: 25px;
+    align-items: center;
+    background-color: #fff;
+    cursor: pointer;
+    transition: all 300ms ease-out;
+
+    &::before,
+    &::after {
+      content: "";
+      position: relative;
+      width: 25px;
+      height: 25px;
+      border-radius: 50%;
+      background-color: #fff;
+      z-index: 3;
+      transition: all 300ms ease-out;
+    }
+    &::before {
+      left: -12.5px;
+    }
+    &::after {
+      left: 12.5px;
+    }
+    &.active {
+      background-color: def.$button-green;
+
+      &::after,
+      &::before {
+        background-color: def.$button-green;
+      }
+
+      .circle {
+        left: 37.5px;
+      }
+    }
+
+    .circle {
+      position: absolute;
+      display: block;
+      width: 17px;
+      height: 17px;
+      left: -7px;
+      border-radius: 50%;
+      background-color: def.$border-gray;
+      border: 1px solid def.$border-dimgray;
+      z-index: 5;
+      transition: all 300ms ease-out;
+    }
+  }
+}
+
+#volume-range,
+#volume-value {
+  margin-left: 20px;
+  background-color: transparent;
+  border: none;
+  color: #fff;
+  font-family: inherit;
+  font-weight: 300;
+  font-size: 1.1rem;
+
+  &:focus {
+    border: none;
+    outline: none;
+  }
+}
+
+/* Chrome, Safari, Edge, Opera */
+input::-webkit-outer-spin-button,
+input::-webkit-inner-spin-button {
+  -webkit-appearance: none;
+  margin: 0;
+}
+
+/* Firefox */
+input[type="number"] {
+  -moz-appearance: textfield;
+}

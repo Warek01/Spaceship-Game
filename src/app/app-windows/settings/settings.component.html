@@ -1,11 +1,51 @@
 <app-window [window-title]="title" [window-id]="'settings'">
-  <div class="option">
 
+  <div class="option sound">
+    <span class="description" (click)="switchSound()">
+      Sound
+    </span>
+    <div class="switch-container">
+      <div class="switch" [class]="soundIsActive? 'active' : ''" (click)="switchSound()">
+        <div class="circle"></div>
+      </div>
+    </div>
   </div>
-  <div class="option">
 
+  <div class="option volume">
+    <span class="description" (click)="volVal.select()">
+      Volume
+    </span>
+    <input 
+      type="range" 
+      name="volume-range" 
+      id="volume-range" 
+      #volRng 
+      (change)="changeVolume(int(volRng.value));"
+      (click)="playSample()"
+      [(ngModel)]="volume"
+      [value]="volume"
+    >
+    <input 
+      type="number" 
+      name="volume-value" 
+      id="volume-value" 
+      inputmode="numeric" 
+      minlength="1" 
+      maxlength="3" 
+      min="0" 
+      max="100"
+      #volVal
+      [value]="volume"
+      [(ngModel)]="volume"
+      (change)="
+        volVal.value = parseVolume(volVal.value); 
+        changeVolume(int(volVal.value))
+      "
+      (keydown.enter)="volVal.blur()"
+      (keydown.esc)="volVal.blur()"
+      (keydown)="$event.stopPropagation()"
+      (blur)="playSample()"
+    > 
   </div>
-  <div class="option">
-    
-  </div>
+
 </app-window>

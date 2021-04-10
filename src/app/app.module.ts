@@ -13,6 +13,7 @@ import { BackgroundComponent } from "./background/background.component";
 import { GameAudioComponent } from "./game-audio/game-audio.component";
 import { SettingsWindowComponent } from "./app-windows/settings/settings.component";
 import { WindowComponent } from "./app-windows/window/window.component";
+import { FormsModule } from "@angular/forms";
 
 @NgModule({
   declarations: [
@@ -27,7 +28,7 @@ import { WindowComponent } from "./app-windows/window/window.component";
     SettingsWindowComponent,
     WindowComponent,
   ],
-  imports: [BrowserModule, AppRoutingModule, HttpClientModule],
+  imports: [BrowserModule, AppRoutingModule, HttpClientModule, FormsModule],
   providers: [HttpClientModule],
   bootstrap: [AppComponent],
 })

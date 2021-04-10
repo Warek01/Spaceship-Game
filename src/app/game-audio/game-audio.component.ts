@@ -15,6 +15,8 @@ export class GameAudioComponent implements OnInit {
     
     const element = document.getElementById(sound.id) as HTMLAudioElement;
 
+    if (!element.paused) element.currentTime = 0;
+    
     element.volume = sound.volume / 100;
     element.play();
   }

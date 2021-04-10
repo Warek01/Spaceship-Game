@@ -67,7 +67,7 @@ export class AppComponent implements OnInit, AfterViewInit {
         target.tagName.toLowerCase() === "button" ||
         target.parentElement?.tagName.toLowerCase() === "button"
       )
-        this.self.Game.playSound("click-1", 50);
+        this.self.Game.playSound("click-1");
     },
 
     trackEscPress(e: KeyboardEvent) {
@@ -84,8 +84,6 @@ export class AppComponent implements OnInit, AfterViewInit {
   };
 
   ngOnInit() {
-    for (let i = 0; i < 10; i++) console.log(this.Game.generateAsteroid().rotation);
-
     this._registeredWindows.forEach((wd) => {
       this.WdService.registerWindow(wd);
     });
