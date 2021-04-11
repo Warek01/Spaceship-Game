@@ -1,8 +1,7 @@
-import { Injectable, EventEmitter, OnInit, Component } from "@angular/core";
+import { Injectable, EventEmitter } from "@angular/core";
 import { ActivatedRoute, Router } from "@angular/router";
 import { ViewComputingService } from "./viewComputing.service";
 import { GameComponent } from "../game/game.component";
-import $ from "jquery";
 
 export enum GameState {
   Menu = 0,
@@ -71,7 +70,7 @@ export class GameService {
   private _R = 30;
   /** (px/tick) */
   private _shipSpeed = 20;
-  private _shipTextureElement!: JQuery<HTMLDivElement>;
+  private _shipTextureElement!: HTMLDivElement;
   /** Where is user now */
   private _currentGameState = GameState.Menu;
   private _shipTransitionDuration!: string;
@@ -175,10 +174,7 @@ export class GameService {
       this._self.textures.ship.forEach((str) => {
         if (str === texture) {
           this._self.currentTexture.ship = currentTexture;
-          this._self._shipTextureElement.css(
-            "background-image",
-            `url(../../../../assets/img/${texture})`
-          );
+          this._self._shipTextureElement.style.backgroundImage = `url(../../../../assets/img/${texture})`;
           return;
         } else currentTexture++;
       });
@@ -193,18 +189,14 @@ export class GameService {
     },
 
     shipPosition(pos: Position) {
-      this._self.ship!.element.css("transition-duration", "0s");
+      this._self.ship!.element.classList.add("no-transition");
 
-      this._self.ship!.element.css({
-        left: pos.x,
-        top: pos.y,
-      });
+      this._self.ship!.element.style.left = pos.x + "px";
+      this._self.ship!.element.style.top = pos.y + "px";
 
       setTimeout(() => {
-        this._self.ship!.element.css(
-          "transition-duration",
-          this._self._shipTransitionDuration
-        );
+        this._self.ship!.element.classList.remove("no-transition");
+        this._self.ship!.element.style.transitionDuration = this._self._shipTransitionDuration;
       });
 
       return this;
@@ -225,39 +217,45 @@ export class GameService {
         },
         movingSpeed: shipSpeed,
         moveDown() {
-          const nextPos = this.element.offset()!.top + this.movingSpeed;
+          const nextPos =
+            this.element.getBoundingClientRect().top + this.movingSpeed;
 
           if (nextPos < self.View.availHeight - R * 2) {
             this.pos.y = nextPos;
-            this.element.css("top", nextPos);
+            this.element.style.top = nextPos + "px";
           } else {
             this.pos.y = self.View.availHeight - R * 2;
-            this.element.css("top", self.View.availHeight - R * 2);
+            this.element.style.top = self.View.availHeight - R * 2 + "px";
           }
         },
         moveUp() {
-          const nextPos = this.element.offset()!.top - R * 2 - this.movingSpeed;
+          const nextPos =
+            this.element.getBoundingClientRect().top - R * 2 - this.movingSpeed;
 
           if (nextPos > R * 2) {
             this.pos.y = nextPos;
-            this.element.css("top", nextPos);
+            this.element.style.top = nextPos + "px";
           } else {
             this.pos.y = self.View.headerHeight - R * 2;
-            this.element.css("top", self.View.headerHeight - R * 2);
+            this.element.style.top = self.View.headerHeight - R * 2 + "px";
           }
         },
       };
 
-      self._shipTextureElement = ship.element.find(".texture") as any;
+      self._shipTextureElement = <HTMLDivElement>(
+        ship.element.querySelector(".texture")
+      );
+      // ship.element.find(".texture") as any;
 
       ship.radius && this.shipRadius(ship.radius);
       ship.texture && this._shipTexture(ship.texture);
 
-      self.ship!.element.width(self._R * 2).height(self._R * 2);
+      self.ship!.element.style.width = self._R * 2 + "px";
+      self.ship!.element.style.height = self._R * 2 + "px";
 
-      self._shipTransitionDuration = self.ship.element.css(
-        "transition-duration"
-      );
+      self._shipTransitionDuration = getComputedStyle(
+        ship.element
+      ).transitionDuration;
 
       this._shipTexture(self.textures.ship[self.currentTexture.ship]);
 
@@ -358,10 +356,9 @@ export class GameService {
 
     this.emitters.setBgTexture.subscribe((index) => {
       this.currentTexture.bg = index;
-      $(document.body).css(
-        "background-image",
-        `url(../../assets/img/${this.textures.bg[this.currentTexture.bg]})`
-      );
+      document.body.style.backgroundImage = `url(../../assets/img/${
+        this.textures.bg[this.currentTexture.bg]
+      })`;
     });
   }
 
@@ -613,7 +610,7 @@ export interface Position {
 }
 
 export interface Ship {
-  element: JQuery<HTMLDivElement>;
+  element: HTMLDivElement;
   pos: Position;
 }
 
@@ -642,7 +639,7 @@ export interface RotationZ {
 }
 
 export interface ShipConfig {
-  element: JQuery<HTMLDivElement>;
+  element: HTMLDivElement;
   pos: Position;
   texture?: string;
   radius?: number;
