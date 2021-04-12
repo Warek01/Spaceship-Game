@@ -2,9 +2,10 @@ import { Injectable, EventEmitter } from "@angular/core";
 import { ActivatedRoute, Router } from "@angular/router";
 import { ViewComputingService } from "./viewComputing.service";
 import { GameComponent } from "../game/game.component";
+import { GameSound, SoundId } from "../game-audio/game-audio.component";
 
 export enum GameState {
-  Menu = 0,
+  Menu,
   InGame,
   Paused,
   EndScreen,
@@ -76,6 +77,7 @@ export class GameService {
   private _shipTransitionDuration!: string;
   private _gameStartTimestamp!: number;
   private _gameEndTimestamp!: number;
+  private _endSound = false;
 
   readonly textures: GameTexturesContainer = {
     bg: [
@@ -113,6 +115,7 @@ export class GameService {
       "asteroid_9.png",
       "asteroid_10.png",
     ],
+    explosion: [],
   };
 
   ship: MovingShip | null = null;
@@ -218,7 +221,7 @@ export class GameService {
         movingSpeed: shipSpeed,
         moveDown() {
           const nextPos =
-            this.element.getBoundingClientRect().top + this.movingSpeed;
+            parseInt(getComputedStyle(this.element).top) + this.movingSpeed;
 
           if (nextPos < self.View.availHeight - R * 2) {
             this.pos.y = nextPos;
@@ -230,14 +233,14 @@ export class GameService {
         },
         moveUp() {
           const nextPos =
-            this.element.getBoundingClientRect().top - R * 2 - this.movingSpeed;
+            parseInt(getComputedStyle(this.element).top) - this.movingSpeed;
 
-          if (nextPos > R * 2) {
+          if (nextPos > 0) {
             this.pos.y = nextPos;
             this.element.style.top = nextPos + "px";
           } else {
-            this.pos.y = self.View.headerHeight - R * 2;
-            this.element.style.top = self.View.headerHeight - R * 2 + "px";
+            this.pos.y = 0;
+            this.element.style.top = "0px";
           }
         },
       };
@@ -245,7 +248,6 @@ export class GameService {
       self._shipTextureElement = <HTMLDivElement>(
         ship.element.querySelector(".texture")
       );
-      // ship.element.find(".texture") as any;
 
       ship.radius && this.shipRadius(ship.radius);
       ship.texture && this._shipTexture(ship.texture);
@@ -314,20 +316,6 @@ export class GameService {
       }.bind(component);
     },
   };
-
-  /** Game sounds map */
-  readonly sounds = new Map<SoundId, string>([
-    ["explosion", "explosion_1.wav"],
-    ["launch", "launch_1.wav"],
-    ["click-1", "click_1.wav"],
-    ["click-2", "click_2.wav"],
-    ["shoot-1", "shoot_1.wav"],
-    ["shoot-2", "shoot_2.wav"],
-    ["shoot-3", "shoot_3.wav"],
-    ["break", "break_1.wav"],
-    ["notification", "notification_1.wav"],
-    ["regen", "health_recharge_1.wav"],
-  ]);
 
   constructor(
     private Router: Router,
@@ -408,9 +396,6 @@ export class GameService {
     this.difficulty = difficulty;
     this._gameStartTimestamp = Date.now();
 
-    // clearInterval(this._intervals.asteroid);
-    // this._intervals.asteroid = null;
-
     this._intervals.asteroid = setInterval(() => {
       this.emitters.asteroid.emit(this.generateAsteroid());
     }, 3000 / (this._genRate + this.difficulty));
@@ -422,39 +407,45 @@ export class GameService {
     }, this._scoreRate);
 
     this._intervals.asteroidClear = setInterval(() => {
-      const asteroids = document.querySelectorAll(".asteroid");
+      try {
+        const asteroids = document.getElementsByClassName("asteroid");
 
-      let i = asteroids.length;
-      if (i)
-        while (--i) {
+        const len = asteroids.length;
+        for (let i = 0; i < len; i++)
           if (asteroids[i].getBoundingClientRect().left <= 0)
             asteroids[i].remove();
-        }
+      } catch {}
     }, 1000);
 
     let timer: any;
     this._rangeCalcTimerId = setTimeout(
       (timer = () => {
         if (this._isStopped) return;
-        const asteroids = document.querySelectorAll(".asteroid");
-        const ship = document.getElementById("ship");
-        const R = parseFloat(ship?.style.width!) / 2;
+        const asteroids = document.getElementsByClassName("asteroid");
+        const ship = this.ship!.element;
+        const R = parseFloat(ship.style.width!) / 2;
 
-        for (let i = 0; i < asteroids.length; i++) {
+        const len = asteroids.length;
+        for (let i = 0; i < len; i++) {
           const elem = asteroids[i];
-          const r = parseFloat((elem as HTMLDivElement).style.width!) / 2;
+          const r = parseFloat((elem as HTMLDivElement).style.width) / 2;
 
-          if (r && R && r + R > this.View.distanceBetween(elem, ship!)) {
-            this.shipCollision();
+          if (r && R && r + R > this.View.distanceBetween(elem, ship) + 5) {
+            this.shipCollision({
+              y: ship.getBoundingClientRect().top,
+              x: ship.getBoundingClientRect().left,
+            });
           }
         }
-        if (this._rangeCalcTimerId)
-          this._rangeCalcTimerId = setTimeout(timer, 50);
+        this._rangeCalcTimerId = this._rangeCalcTimerId
+          ? setTimeout(timer, 25)
+          : null;
       }),
-      50
+      25
     );
   }
 
+  // Completely stop & move to end screen
   stop() {
     if (this._currentScore > this._bestScore) {
       this._bestScore = this._currentScore;
@@ -468,12 +459,12 @@ export class GameService {
     this._currentScore = 0;
     this._gameEndTimestamp = Date.now();
 
-    this.playSound("break");
+    this._endSound && this.playSound("break");
     this.navTo(GameState.EndScreen);
   }
 
-  shipCollision() {
-    this.playSound("explosion");
+  shipCollision(pos: Position) {
+    this.createExplosion(pos, 3000);
     this.endGame();
   }
 
@@ -493,14 +484,24 @@ export class GameService {
   }
   continue() {}
 
+  createExplosion(pos: Position, duration: number) {
+    this.playSound("explosion");
+    const interval = duration / this.textures.explosion.length;
+  }
+
   generateAsteroid(): Asteroid {
-    const rotation: RotationZ | null = !+Math.random().toFixed(0) // true/false
-      ? {
-          degrees: +(Math.random() * 720 + 15).toFixed(0),
-          transitionSpeed: +(Math.random() * 2000 + 1000).toFixed(0),
-          type: +(Math.random() * 4).toFixed(0),
-        }
-      : null;
+    const rotation: RotationZ | null =
+      Math.random() <= 0.75 // 75% chance
+        ? {
+            degrees:
+              +(Math.random() * 100).toFixed(0) +
+              +(Math.random() * 900).toFixed(0),
+            transitionSpeed:
+              +(Math.random() * 3000).toFixed(0) +
+              +(Math.random() * 3000).toFixed(0),
+            type: +(Math.random() * 4).toFixed(0),
+          }
+        : null;
 
     return {
       texture: `asteroid_${+(Math.random() * 9 + 1).toFixed(0)}.png`,
@@ -581,27 +582,11 @@ export class GameService {
 
 export type gameMode = "debug" | "release";
 
-export type SoundId =
-  | "click-1"
-  | "click-2"
-  | "launch"
-  | "shoot-1"
-  | "shoot-2"
-  | "shoot-3"
-  | "regen"
-  | "notification"
-  | "break"
-  | "explosion";
-
-export interface GameSound {
-  id: SoundId;
-  volume: number;
-}
-
 export interface GameTexturesContainer {
   bg: string[];
   ship: string[];
   asteroid: string[];
+  explosion: string[];
 }
 
 export interface Position {

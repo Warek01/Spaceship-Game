@@ -11,6 +11,7 @@ import {
   Asteroid,
   Position,
   Difficulty,
+  TransitionType,
 } from "../services/game.service";
 import { ViewComputingService } from "../services/viewComputing.service";
 import { fromEvent, Subscription } from "rxjs";
@@ -19,6 +20,9 @@ import { fromEvent, Subscription } from "rxjs";
   selector: "app-game",
   templateUrl: "./game.component.html",
   styleUrls: ["./game.component.scss"],
+  host: {
+    "(window:keydown.F1)": "_nextShip($event)",
+  },
 })
 export class GameComponent implements OnInit, OnDestroy, AfterViewInit {
   private _shipElement!: HTMLDivElement;
@@ -60,6 +64,7 @@ export class GameComponent implements OnInit, OnDestroy, AfterViewInit {
     this._gameElement!.append(obj);
 
     setTimeout(() => {
+      asteroid.rotation && this._rotateAsteroid(obj, asteroid);
       this._moveAsteroid(obj, asteroid);
     }, 50);
   }
@@ -69,8 +74,15 @@ export class GameComponent implements OnInit, OnDestroy, AfterViewInit {
     obj.style.left = 0 - asteroid.radius * 2 + "px";
 
     obj.ontransitionend = function transitionEnd(this: GameComponent) {
-      this._removeAsteroid(obj);
+      if (parseInt(getComputedStyle(obj).left) <= 0) this._removeAsteroid(obj);
     }.bind(this);
+  }
+
+  private _rotateAsteroid(obj: HTMLDivElement, asteroid: Asteroid) {
+    obj.style.transform = `rotateZ(${asteroid.rotation!.degrees}deg)`;
+    obj.style.transition = `tranform ${asteroid.rotation?.transitionSpeed} ${
+      TransitionType[asteroid.rotation!.type]
+    }`;
   }
 
   private _removeAsteroid(obj: HTMLDivElement) {
@@ -79,18 +91,29 @@ export class GameComponent implements OnInit, OnDestroy, AfterViewInit {
   }
 
   endGame() {
+    this._shipElement.style.top = getComputedStyle(this._shipElement).top;
+
     const asteroids = document.getElementsByClassName("asteroid");
 
     let len = asteroids.length;
     for (let i = 0; i < len; i++) {
       const obj = <HTMLDivElement>asteroids[i];
+      const { top, left, transform } = getComputedStyle(obj);
+
       obj.classList.add("no-transition");
-      obj.style.top = getComputedStyle(obj).top;
-      obj.style.left = getComputedStyle(obj).left;
+      obj.style.top = top;
+      obj.style.left = left;
+      obj.style.transform = transform;
     }
 
     this._keyDown.unsubscribe();
     this._keyUp.unsubscribe();
+  }
+
+  private _nextShip(event: KeyboardEvent) {
+    // Has to change ship texture during gameplay on F1 press
+    event.preventDefault();
+    alert();
   }
 
   ngOnInit() {}
@@ -105,14 +128,14 @@ export class GameComponent implements OnInit, OnDestroy, AfterViewInit {
       x: left,
       y: top,
     };
-    
-    this._shipRadius = parseFloat(getComputedStyle(this._shipElement).height) / 2;
+
+    this._shipRadius = parseInt(getComputedStyle(this._shipElement).height) / 2;
 
     this.Game.set
       .ship({
         element: this._shipElement,
         pos: this._shipPosition,
-        speed: 50,
+        speed: this.View.availHeight / 25,
       })
       .asteroidRadius(40)
       .asteroidSpeed(500, 0)

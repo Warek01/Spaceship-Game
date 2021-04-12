@@ -7,7 +7,7 @@ import {
   ViewEncapsulation,
 } from "@angular/core";
 import { ActivatedRoute, Router } from "@angular/router";
-import { GameService, GameState, GameSound } from "./services/game.service";
+import { GameService, GameState } from "./services/game.service";
 import { ViewComputingService } from "./services/viewComputing.service";
 import {
   WindowsService,
