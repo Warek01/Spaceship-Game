@@ -1,7 +1,6 @@
 import {
   AfterViewInit,
   Component,
-  HostListener,
   Input,
   OnDestroy,
   OnInit,
@@ -12,22 +11,26 @@ import {
   Asteroid,
   Position,
   Difficulty,
+  TransitionType,
 } from "../services/game.service";
 import { ViewComputingService } from "../services/viewComputing.service";
-import $ from "jquery";
-import { fromEvent, Observable, Subscription } from "rxjs";
+import { fromEvent, Subscription } from "rxjs";
 
 @Component({
   selector: "app-game",
   templateUrl: "./game.component.html",
   styleUrls: ["./game.component.scss"],
+  host: {
+    "(window:keydown.F1)": "_nextShip($event)",
+  },
 })
 export class GameComponent implements OnInit, OnDestroy, AfterViewInit {
-  private _shipElement!: JQuery<HTMLDivElement>;
+  private _shipElement!: HTMLDivElement;
   private _shipPosition!: Position;
   private _shipRadius = 20;
   private _keyDown!: Subscription;
   private _keyUp!: Subscription;
+  private _gameElement!: HTMLDivElement;
 
   asteroids = new Map<number, Asteroid>();
   height!: string;
@@ -45,78 +48,94 @@ export class GameComponent implements OnInit, OnDestroy, AfterViewInit {
     this.Game.launch();
   }
 
-  private renderAsteroid(asteroid: Asteroid) {
-    const obj = $(document.createElement("div"));
+  private _renderAsteroid(asteroid: Asteroid) {
+    const obj = document.createElement("div");
 
-    obj
-      .css({
-        top: asteroid.initialY,
-        left: this.View.availWidth - 50,
-        height: asteroid.radius,
-        width: asteroid.radius,
-        backgroundImage: `url(../../assets/img/${asteroid.texture})`,
-        transitionDuration: this.View.availWidth / asteroid.velocity + "s",
-      })
-      .addClass("asteroid");
+    obj.style.cssText = `
+      top: ${asteroid.initialY}px;
+      left: ${this.View.availWidth - 50}px;
+      height: ${asteroid.radius}px;
+      width: ${asteroid.radius}px;
+      background-image: url(../../assets/img/${asteroid.texture});
+      transition-duration: ${this.View.availWidth / asteroid.velocity}s;
+    `;
 
-    $("#game").append(obj);
+    obj.className = "asteroid";
+    this._gameElement!.append(obj);
 
     setTimeout(() => {
-      this.moveAsteroid(obj, asteroid);
+      asteroid.rotation && this._rotateAsteroid(obj, asteroid);
+      this._moveAsteroid(obj, asteroid);
     }, 50);
   }
 
-  private moveAsteroid(
-    asteroidObject: JQuery<HTMLDivElement>,
-    asteroid: Asteroid
-  ) {
-    asteroidObject
-      .css({
-        top: asteroid.finalY,
-        left: 0 - asteroid.radius * 2,
-      })
-      .on("transitionend", (e) => {
-        this.removeAsteroid(asteroidObject);
-      });
+  private _moveAsteroid(obj: HTMLDivElement, asteroid: Asteroid) {
+    obj.style.top = asteroid.finalY + "px";
+    obj.style.left = 0 - asteroid.radius * 2 + "px";
+
+    obj.ontransitionend = function transitionEnd(this: GameComponent) {
+      if (parseInt(getComputedStyle(obj).left) <= 0) this._removeAsteroid(obj);
+    }.bind(this);
   }
 
-  private removeAsteroid(asteroidObject: JQuery<HTMLDivElement>) {
+  private _rotateAsteroid(obj: HTMLDivElement, asteroid: Asteroid) {
+    obj.style.transform = `rotateZ(${asteroid.rotation!.degrees}deg)`;
+    obj.style.transition = `tranform ${asteroid.rotation?.transitionSpeed} ${
+      TransitionType[asteroid.rotation!.type]
+    }`;
+  }
+
+  private _removeAsteroid(obj: HTMLDivElement) {
     this.Game.emitters.countAsteroid.emit(null);
-    asteroidObject.remove();
+    obj.remove();
   }
 
   endGame() {
-    let asteroids: JQuery | null = $(".asteroid");
+    this._shipElement.style.top = getComputedStyle(this._shipElement).top;
 
-    asteroids.css("transition", "0s");
+    const asteroids = document.getElementsByClassName("asteroid");
 
-    asteroids.each((i, em) => {
-      $(em).css({
-        top: $(em).css("top"),
-        left: $(em).css("left"),
-      });
-    });
+    let len = asteroids.length;
+    for (let i = 0; i < len; i++) {
+      const obj = <HTMLDivElement>asteroids[i];
+      const { top, left, transform } = getComputedStyle(obj);
 
-    asteroids = null;
+      obj.classList.add("no-transition");
+      obj.style.top = top;
+      obj.style.left = left;
+      obj.style.transform = transform;
+    }
+
     this._keyDown.unsubscribe();
     this._keyUp.unsubscribe();
+  }
+
+  private _nextShip(event: KeyboardEvent) {
+    // Has to change ship texture during gameplay on F1 press
+    event.preventDefault();
+    alert();
   }
 
   ngOnInit() {}
 
   ngAfterViewInit() {
-    this._shipElement = $("#ship");
+    this._gameElement = <HTMLDivElement>document.getElementById("game");
+    this._shipElement = <HTMLDivElement>document.getElementById("ship");
+
+    const { left, top } = this._shipElement.getBoundingClientRect();
+
     this._shipPosition = {
-      x: this._shipElement.offset()!.left,
-      y: this._shipElement.offset()!.top,
+      x: left,
+      y: top,
     };
-    this._shipRadius = parseFloat(this._shipElement.css("height")) / 2;
+
+    this._shipRadius = parseInt(getComputedStyle(this._shipElement).height) / 2;
 
     this.Game.set
       .ship({
         element: this._shipElement,
         pos: this._shipPosition,
-        speed: 50,
+        speed: this.View.availHeight / 25,
       })
       .asteroidRadius(40)
       .asteroidSpeed(500, 0)
@@ -134,7 +153,7 @@ export class GameComponent implements OnInit, OnDestroy, AfterViewInit {
     );
 
     this.Game.emitters.asteroid.subscribe((asteroid) => {
-      this.renderAsteroid(asteroid);
+      this._renderAsteroid(asteroid);
     });
 
     this.Game.emitters.endGame.subscribe((NULL) => {

@@ -1,11 +1,11 @@
-import { Injectable, EventEmitter, OnInit, Component } from "@angular/core";
+import { Injectable, EventEmitter } from "@angular/core";
 import { ActivatedRoute, Router } from "@angular/router";
 import { ViewComputingService } from "./viewComputing.service";
 import { GameComponent } from "../game/game.component";
-import $ from "jquery";
+import { GameSound, SoundId } from "../game-audio/game-audio.component";
 
 export enum GameState {
-  Menu = 0,
+  Menu,
   InGame,
   Paused,
   EndScreen,
@@ -71,12 +71,13 @@ export class GameService {
   private _R = 30;
   /** (px/tick) */
   private _shipSpeed = 20;
-  private _shipTextureElement!: JQuery<HTMLDivElement>;
+  private _shipTextureElement!: HTMLDivElement;
   /** Where is user now */
   private _currentGameState = GameState.Menu;
   private _shipTransitionDuration!: string;
   private _gameStartTimestamp!: number;
   private _gameEndTimestamp!: number;
+  private _endSound = false;
 
   readonly textures: GameTexturesContainer = {
     bg: [
@@ -86,6 +87,12 @@ export class GameService {
       "game_bg_4.jpg",
       "game_bg_5.jpg",
       "game_bg_6.jpg",
+      "game_bg_7.jpg",
+      "game_bg_8.jpg",
+      "game_bg_9.jpg",
+      "game_bg_10.jpg",
+      "game_bg_11.jpg",
+      "game_bg_12.jpg",
     ],
     ship: [
       "ship_1.png",
@@ -108,6 +115,7 @@ export class GameService {
       "asteroid_9.png",
       "asteroid_10.png",
     ],
+    explosion: [],
   };
 
   ship: MovingShip | null = null;
@@ -169,10 +177,7 @@ export class GameService {
       this._self.textures.ship.forEach((str) => {
         if (str === texture) {
           this._self.currentTexture.ship = currentTexture;
-          this._self._shipTextureElement.css(
-            "background-image",
-            `url(../../../../assets/img/${texture})`
-          );
+          this._self._shipTextureElement.style.backgroundImage = `url(../../../../assets/img/${texture})`;
           return;
         } else currentTexture++;
       });
@@ -187,18 +192,14 @@ export class GameService {
     },
 
     shipPosition(pos: Position) {
-      this._self.ship!.element.css("transition-duration", "0s");
+      this._self.ship!.element.classList.add("no-transition");
 
-      this._self.ship!.element.css({
-        left: pos.x,
-        top: pos.y,
-      });
+      this._self.ship!.element.style.left = pos.x + "px";
+      this._self.ship!.element.style.top = pos.y + "px";
 
       setTimeout(() => {
-        this._self.ship!.element.css(
-          "transition-duration",
-          this._self._shipTransitionDuration
-        );
+        this._self.ship!.element.classList.remove("no-transition");
+        this._self.ship!.element.style.transitionDuration = this._self._shipTransitionDuration;
       });
 
       return this;
@@ -219,39 +220,44 @@ export class GameService {
         },
         movingSpeed: shipSpeed,
         moveDown() {
-          const nextPos = this.element.offset()!.top + this.movingSpeed;
+          const nextPos =
+            parseInt(getComputedStyle(this.element).top) + this.movingSpeed;
 
           if (nextPos < self.View.availHeight - R * 2) {
             this.pos.y = nextPos;
-            this.element.css("top", nextPos);
+            this.element.style.top = nextPos + "px";
           } else {
             this.pos.y = self.View.availHeight - R * 2;
-            this.element.css("top", self.View.availHeight - R * 2);
+            this.element.style.top = self.View.availHeight - R * 2 + "px";
           }
         },
         moveUp() {
-          const nextPos = this.element.offset()!.top - R * 2 - this.movingSpeed;
+          const nextPos =
+            parseInt(getComputedStyle(this.element).top) - this.movingSpeed;
 
-          if (nextPos > R * 2) {
+          if (nextPos > 0) {
             this.pos.y = nextPos;
-            this.element.css("top", nextPos);
+            this.element.style.top = nextPos + "px";
           } else {
-            this.pos.y = self.View.headerHeight - R * 2;
-            this.element.css("top", self.View.headerHeight - R * 2);
+            this.pos.y = 0;
+            this.element.style.top = "0px";
           }
         },
       };
 
-      self._shipTextureElement = ship.element.find(".texture") as any;
+      self._shipTextureElement = <HTMLDivElement>(
+        ship.element.querySelector(".texture")
+      );
 
       ship.radius && this.shipRadius(ship.radius);
       ship.texture && this._shipTexture(ship.texture);
 
-      self.ship!.element.width(self._R * 2).height(self._R * 2);
+      self.ship!.element.style.width = self._R * 2 + "px";
+      self.ship!.element.style.height = self._R * 2 + "px";
 
-      self._shipTransitionDuration = self.ship.element.css(
-        "transition-duration"
-      );
+      self._shipTransitionDuration = getComputedStyle(
+        ship.element
+      ).transitionDuration;
 
       this._shipTexture(self.textures.ship[self.currentTexture.ship]);
 
@@ -311,20 +317,6 @@ export class GameService {
     },
   };
 
-  /** Game sounds map */
-  readonly sounds = new Map<SoundId, string>([
-    ["explosion", "explosion_1.wav"],
-    ["launch", "launch_1.wav"],
-    ["click-1", "click_1.wav"],
-    ["click-2", "click_2.wav"],
-    ["shoot-1", "shoot_1.wav"],
-    ["shoot-2", "shoot_2.wav"],
-    ["shoot-3", "shoot_3.wav"],
-    ["break", "break_1.wav"],
-    ["notification", "notification_1.wav"],
-    ["regen", "health_recharge_1.wav"],
-  ]);
-
   constructor(
     private Router: Router,
     private Route: ActivatedRoute,
@@ -352,10 +344,9 @@ export class GameService {
 
     this.emitters.setBgTexture.subscribe((index) => {
       this.currentTexture.bg = index;
-      $(document.body).css(
-        "background-image",
-        `url(../../assets/img/${this.textures.bg[this.currentTexture.bg]})`
-      );
+      document.body.style.backgroundImage = `url(../../assets/img/${
+        this.textures.bg[this.currentTexture.bg]
+      })`;
     });
   }
 
@@ -405,9 +396,6 @@ export class GameService {
     this.difficulty = difficulty;
     this._gameStartTimestamp = Date.now();
 
-    // clearInterval(this._intervals.asteroid);
-    // this._intervals.asteroid = null;
-
     this._intervals.asteroid = setInterval(() => {
       this.emitters.asteroid.emit(this.generateAsteroid());
     }, 3000 / (this._genRate + this.difficulty));
@@ -419,39 +407,45 @@ export class GameService {
     }, this._scoreRate);
 
     this._intervals.asteroidClear = setInterval(() => {
-      const asteroids = document.querySelectorAll(".asteroid");
+      try {
+        const asteroids = document.getElementsByClassName("asteroid");
 
-      let i = asteroids.length;
-      if (i)
-        while (--i) {
+        const len = asteroids.length;
+        for (let i = 0; i < len; i++)
           if (asteroids[i].getBoundingClientRect().left <= 0)
             asteroids[i].remove();
-        }
+      } catch {}
     }, 1000);
 
     let timer: any;
     this._rangeCalcTimerId = setTimeout(
       (timer = () => {
         if (this._isStopped) return;
-        const asteroids = document.querySelectorAll(".asteroid");
-        const ship = document.getElementById("ship");
-        const R = parseFloat(ship?.style.width!) / 2;
+        const asteroids = document.getElementsByClassName("asteroid");
+        const ship = this.ship!.element;
+        const R = parseFloat(ship.style.width!) / 2;
 
-        for (let i = 0; i < asteroids.length; i++) {
+        const len = asteroids.length;
+        for (let i = 0; i < len; i++) {
           const elem = asteroids[i];
-          const r = parseFloat((elem as HTMLDivElement).style.width!) / 2;
+          const r = parseFloat((elem as HTMLDivElement).style.width) / 2;
 
-          if (r && R && r + R > this.View.distanceBetween(elem, ship!)) {
-            this.shipCollision();
+          if (r && R && r + R > this.View.distanceBetween(elem, ship) + 5) {
+            this.shipCollision({
+              y: ship.getBoundingClientRect().top,
+              x: ship.getBoundingClientRect().left,
+            });
           }
         }
-        if (this._rangeCalcTimerId)
-          this._rangeCalcTimerId = setTimeout(timer, 50);
+        this._rangeCalcTimerId = this._rangeCalcTimerId
+          ? setTimeout(timer, 25)
+          : null;
       }),
-      50
+      25
     );
   }
 
+  // Completely stop & move to end screen
   stop() {
     if (this._currentScore > this._bestScore) {
       this._bestScore = this._currentScore;
@@ -465,12 +459,12 @@ export class GameService {
     this._currentScore = 0;
     this._gameEndTimestamp = Date.now();
 
-    this.playSound("break");
+    this._endSound && this.playSound("break");
     this.navTo(GameState.EndScreen);
   }
 
-  shipCollision() {
-    this.playSound("explosion");
+  shipCollision(pos: Position) {
+    this.createExplosion(pos, 3000);
     this.endGame();
   }
 
@@ -490,14 +484,24 @@ export class GameService {
   }
   continue() {}
 
+  createExplosion(pos: Position, duration: number) {
+    this.playSound("explosion");
+    const interval = duration / this.textures.explosion.length;
+  }
+
   generateAsteroid(): Asteroid {
-    const rotation: RotationZ | null = !+Math.random().toFixed(0) // true/false
-      ? {
-          degrees: +(Math.random() * 720 + 15).toFixed(0),
-          transitionSpeed: +(Math.random() * 2000 + 1000).toFixed(0),
-          type: +(Math.random() * 4).toFixed(0),
-        }
-      : null;
+    const rotation: RotationZ | null =
+      Math.random() <= 0.75 // 75% chance
+        ? {
+            degrees:
+              +(Math.random() * 100).toFixed(0) +
+              +(Math.random() * 900).toFixed(0),
+            transitionSpeed:
+              +(Math.random() * 3000).toFixed(0) +
+              +(Math.random() * 3000).toFixed(0),
+            type: +(Math.random() * 4).toFixed(0),
+          }
+        : null;
 
     return {
       texture: `asteroid_${+(Math.random() * 9 + 1).toFixed(0)}.png`,
@@ -578,27 +582,11 @@ export class GameService {
 
 export type gameMode = "debug" | "release";
 
-export type SoundId =
-  | "click-1"
-  | "click-2"
-  | "launch"
-  | "shoot-1"
-  | "shoot-2"
-  | "shoot-3"
-  | "regen"
-  | "notification"
-  | "break"
-  | "explosion";
-
-export interface GameSound {
-  id: SoundId;
-  volume: number;
-}
-
 export interface GameTexturesContainer {
   bg: string[];
   ship: string[];
   asteroid: string[];
+  explosion: string[];
 }
 
 export interface Position {
@@ -607,7 +595,7 @@ export interface Position {
 }
 
 export interface Ship {
-  element: JQuery<HTMLDivElement>;
+  element: HTMLDivElement;
   pos: Position;
 }
 
@@ -636,7 +624,7 @@ export interface RotationZ {
 }
 
 export interface ShipConfig {
-  element: JQuery<HTMLDivElement>;
+  element: HTMLDivElement;
   pos: Position;
   texture?: string;
   radius?: number;

@@ -91,3 +91,10 @@ kbd {
   background-color: def.$kbd-dark;
   font-family: def.$kbd-font;
 }
+
+.no-transition {
+  -webkit-transition: 0s !important;  
+  -moz-transition: 0s !important;
+  -o-transition: 0s !important;
+  transition: 0s !important;
+}

@@ -16,14 +16,30 @@ export class SettingsWindowComponent implements OnInit {
     this.volume = Game.settings.sound.masterVolume;
   }
 
-  switchSound() {
+  switchSound(fromSwitch?: boolean) {
+    let timer: () => void;
+    const interval = 300 / this.volume;
+
     this.soundIsActive = !this.soundIsActive;
+
     if (this.soundIsActive) {
       this.Game.enableSound();
-      this.volume = 50;
+      if (fromSwitch)
+        setTimeout(
+          (timer = () => {
+            if (++this.volume < 50) setTimeout(timer, interval);
+          }),
+          interval
+        );
     } else {
       this.Game.disableSound();
-      this.volume = 0;
+      if (fromSwitch)
+        setTimeout(
+          (timer = () => {
+            if (--this.volume > 0) setTimeout(timer, interval);
+          }),
+          interval
+        );
     }
   }
 

@@ -10,7 +10,7 @@
   align-items: center;
   z-index: 99;
 
-  transition: all 50ms ease-in-out;
+  transition: all 0ms ease-in-out;
 
   .texture {
     position: relative;
@@ -21,7 +21,5 @@
     background-position: center;
     background-repeat: no-repeat;
     background-size: cover;
-    // object-fit: cover;
-    // object-position: center;
   }
 }

@@ -16,18 +16,23 @@ export class WindowsService {
     this._registeredWindows.push(wd);
   }
 
-  open(windowName: string,) {
-    this._registeredWindows.forEach((wd) => {
-      if (wd.id === windowName) {
-        this._openedWindows.push(wd);
-        this.OpenWindow.emit(wd);
-      }
-    });
+  open(wdId: string) {
+    if (
+      !this._openedWindows.find((wd, i) => {
+        return wd.id === wdId;
+      })
+    )
+      this._registeredWindows.forEach((wd) => {
+        if (wd.id === wdId) {
+          this._openedWindows.push(wd);
+          this.OpenWindow.emit(wd);
+        }
+      });
   }
 
-  close(windowName: string) {
+  close(wdId: string) {
     this._openedWindows.forEach((wd, i) => {
-      if (wd.id === windowName) {
+      if (wd.id === wdId) {
         this.CloseWindow.emit(wd);
         this._openedWindows.splice(i, 1);
       }

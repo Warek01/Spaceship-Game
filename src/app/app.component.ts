@@ -7,7 +7,7 @@ import {
   ViewEncapsulation,
 } from "@angular/core";
 import { ActivatedRoute, Router } from "@angular/router";
-import { GameService, GameState, GameSound } from "./services/game.service";
+import { GameService, GameState } from "./services/game.service";
 import { ViewComputingService } from "./services/viewComputing.service";
 import {
   WindowsService,
@@ -32,6 +32,7 @@ import { SettingsWindowComponent } from "./app-windows/settings/settings.compone
   },
 })
 export class AppComponent implements OnInit, AfterViewInit {
+  private _initialMasterVolume = 10;
   private _activeWindow: AppWindowRef | null = null;
   private _openedWindows: AppWindowRef[] = [];
   private _registeredWindows: AppWindow[] = [
@@ -100,6 +101,8 @@ export class AppComponent implements OnInit, AfterViewInit {
     this.Game.emitters.currentGameState.subscribe((state) => {
       this.currentGameState = state;
     });
+
+    this.Game.set.masterVolume(this._initialMasterVolume);
   }
 
   ngAfterViewInit() {
@@ -109,7 +112,10 @@ export class AppComponent implements OnInit, AfterViewInit {
     this.WdService.OpenWindow.subscribe((wd) => {
       const factory = this.Factory.resolveComponentFactory(wd.component);
       const ref = this.ViewRef.createComponent(factory);
-      this._openedWindows.push({ ...wd, ref });
+      const wnd: AppWindowRef = { ...wd, ref };
+
+      this._openedWindows.push(wnd);
+      this._activeWindow = wnd;
     });
 
     this.WdService.CloseWindow.subscribe((wd) => {
@@ -117,6 +123,10 @@ export class AppComponent implements OnInit, AfterViewInit {
         if (wd.id === owd.id) {
           owd.ref.destroy();
           this._openedWindows.splice(i, 1);
+
+          this._activeWindow = this._openedWindows.length
+            ? this._openedWindows[this._openedWindows.length - 1]
+            : null;
         }
       });
     });
