@@ -1,11 +1,14 @@
 import { Component, OnInit } from "@angular/core";
-import { Difficulty, GameService } from "../services/game.service";
+import { Difficulty, GameService, GameState } from "../services/game.service";
 import { ViewComputingService } from "../services/viewComputing.service";
 
 @Component({
   selector: "app-menu",
   templateUrl: "./menu.component.html",
   styleUrls: ["./menu.component.scss"],
+  host: {
+    "(window:keydown.space)": "launchGame(1)"
+  }
 })
 export class MenuComponent implements OnInit {
   attributes = {
@@ -19,6 +22,10 @@ export class MenuComponent implements OnInit {
 
   constructor(public Game: GameService, public View: ViewComputingService) {
     this.attributes.height = View.availHeight + "px";
+  }
+
+  launchGame() {
+    this.Game.navTo(GameState.InGame)
   }
 
   nextShipTexture() {

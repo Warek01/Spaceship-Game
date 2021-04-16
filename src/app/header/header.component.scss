@@ -38,11 +38,10 @@
       letter-spacing: 5px;
       font-weight: bold;
       color: def.$logo-color;
-      transition: text-shadow 300ms ease-out,
-        color 300ms ease-out;
-      
+      transition: text-shadow 300ms ease-out, color 300ms ease-out;
+
       &:hover {
-        text-shadow: 3px 3px 5px rgba(#000, .75);
+        text-shadow: 3px 3px 5px rgba(#000, 0.75);
         color: def.$button-color;
       }
     }
@@ -56,7 +55,7 @@
 }
 
 .btn-container {
-  position: relative; 
+  position: relative;
   display: flex;
   width: 50%;
   height: 100%;

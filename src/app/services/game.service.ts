@@ -3,6 +3,7 @@ import { ActivatedRoute, Router } from "@angular/router";
 import { ViewComputingService } from "./viewComputing.service";
 import { GameComponent } from "../game/game.component";
 import { GameSound, SoundId } from "../game-audio/game-audio.component";
+import { GameLauchError } from "../classes/Errors";
 
 export enum GameState {
   Menu,
@@ -47,12 +48,16 @@ export class GameService {
     },
   };
 
+  private readonly _stdHp = 3;
+  private readonly _stdMaxHp = 3;
   private _rangeCalcTimerId: any = null;
   private _currentScore = 0;
   private _bestScore = 0;
+  /** Astroid generation rate */
   private _genRate = 1;
   /** (ms) */
   private _scoreRate = 100;
+  /** If game is stopped */
   private _isStopped = false;
   /** Total removed asteroids */
   private _removedAsteroids = 0;
@@ -72,12 +77,12 @@ export class GameService {
   /** (px/tick) */
   private _shipSpeed = 20;
   private _shipTextureElement!: HTMLDivElement;
+  private _shipTransitionDuration!: string;
   /** Where is user now */
   private _currentGameState = GameState.Menu;
-  private _shipTransitionDuration!: string;
   private _gameStartTimestamp!: number;
   private _gameEndTimestamp!: number;
-  private _endSound = false;
+  private _endSound = true;
 
   readonly textures: GameTexturesContainer = {
     bg: [
@@ -146,6 +151,7 @@ export class GameService {
     playSound: new EventEmitter<GameSound>(),
     endGame: new EventEmitter<null>(),
     explosion: new EventEmitter<{ pos: Position; duration: number }>(),
+    shipMove: new EventEmitter<BasicMovement>(),
   };
 
   /** Setters */
@@ -186,8 +192,21 @@ export class GameService {
       return this;
     },
 
-    ShipSpeed(speed: number) {
+    shipSpeed(speed: number) {
       if (speed > 0) this._self._shipSpeed = speed;
+
+      return this;
+    },
+
+    shipHitPoints(value: number) {
+      if (value > 0) this._self.ship!.hp = value;
+
+      return this;
+    },
+
+    shipMaxHitPoints(value: number) {
+      if (value > 0) this._self.ship!.maxHp = value;
+      if (value > this._self.ship!.hp) this._self.ship!.hp = value;
 
       return this;
     },
@@ -198,6 +217,9 @@ export class GameService {
       this._self.ship!.element.style.left = pos.x + "px";
       this._self.ship!.element.style.top = pos.y + "px";
 
+      this._self.ship!.pos.x = pos.x;
+      this._self.ship!.pos.y = pos.y;
+
       setTimeout(() => {
         this._self.ship!.element.classList.remove("no-transition");
         this._self.ship!.element.style.transitionDuration = this._self._shipTransitionDuration;
@@ -207,7 +229,7 @@ export class GameService {
     },
 
     ship(ship: ShipConfig) {
-      ship.speed && this.ShipSpeed(ship.speed);
+      ship.speed && this.shipSpeed(ship.speed);
 
       const R = ship.radius || this._self._R;
       const shipSpeed = this._self._shipSpeed;
@@ -215,14 +237,17 @@ export class GameService {
 
       self.ship = {
         element: ship.element,
+        hp: 3,
+        maxHp: 3,
         pos: {
           x: ship.pos.x,
           y: ship.pos.y,
         },
         movingSpeed: shipSpeed,
+
         moveDown() {
-          const nextPos =
-            parseInt(getComputedStyle(this.element).top) + this.movingSpeed;
+          const currentPos = parseInt(getComputedStyle(this.element).top);
+          const nextPos = currentPos + this.movingSpeed;
 
           if (nextPos < self.View.availHeight - R * 2) {
             this.pos.y = nextPos;
@@ -231,10 +256,17 @@ export class GameService {
             this.pos.y = self.View.availHeight - R * 2;
             this.element.style.top = self.View.availHeight - R * 2 + "px";
           }
+
+          self.emitters.shipMove.emit({
+            direction: "down",
+            from: currentPos,
+            to: nextPos,
+          });
         },
+
         moveUp() {
-          const nextPos =
-            parseInt(getComputedStyle(this.element).top) - this.movingSpeed;
+          const currentPos = parseInt(getComputedStyle(this.element).top);
+          const nextPos = currentPos - this.movingSpeed;
 
           if (nextPos > 0) {
             this.pos.y = nextPos;
@@ -243,6 +275,50 @@ export class GameService {
             this.pos.y = 0;
             this.element.style.top = "0px";
           }
+
+          self.emitters.shipMove.emit({
+            direction: "up",
+            from: currentPos,
+            to: nextPos,
+          });
+        },
+
+        moveLeft() {
+          const currentPos = parseInt(getComputedStyle(this.element).left);
+          const nextPos = currentPos - this.movingSpeed;
+
+          if (nextPos > 0) {
+            this.pos.x = nextPos;
+            this.element.style.left = nextPos + "px";
+          } else {
+            this.pos.x = 0;
+            this.element.style.left = 0 + "px";
+          }
+
+          self.emitters.shipMove.emit({
+            direction: "left",
+            from: currentPos,
+            to: nextPos,
+          });
+        },
+
+        moveRight() {
+          const currentPos = parseInt(getComputedStyle(this.element).left);
+          const nextPos = currentPos + this.movingSpeed;
+
+          if (nextPos < self.View.availWidth - self._R * 2) {
+            this.pos.x = nextPos;
+            this.element.style.left = nextPos + "px";
+          } else {
+            this.pos.x = self.View.availWidth - self._R * 2;
+            this.element.style.left = self.View.availWidth - self._R * 2 + "px";
+          }
+
+          self.emitters.shipMove.emit({
+            direction: "right",
+            from: currentPos,
+            to: nextPos,
+          });
         },
       };
 
@@ -300,6 +376,20 @@ export class GameService {
             self._intervals.keyDown = setInterval(() => {
               self.ship!.moveDown();
             }, 25);
+          else if (
+            self._currentKeyHeld === "a" ||
+            self._currentKeyHeld === "arrowleft"
+          )
+            self._intervals.keyDown = setInterval(() => {
+              self.ship!.moveLeft();
+            }, 25);
+          else if (
+            self._currentKeyHeld === "d" ||
+            self._currentKeyHeld === "arrowright"
+          )
+            self._intervals.keyDown = setInterval(() => {
+              self.ship!.moveRight();
+            }, 25);
         }
       }.bind(component);
     },
@@ -328,11 +418,11 @@ export class GameService {
       this._currentGameState = state;
     });
 
-    this.emitters.countAsteroid.subscribe((val) => {
+    this.emitters.countAsteroid.subscribe((NULL) => {
       this._totalAsteroids++;
     });
 
-    this.emitters.deleteAsteroid.subscribe((val) => {
+    this.emitters.deleteAsteroid.subscribe((NULL) => {
       this._removedAsteroids++;
     });
 
@@ -365,31 +455,38 @@ export class GameService {
     this._currentGameState = state;
   }
 
-  get passedAsteroidsCount() {
+  get passedAsteroidsCount(): number {
     return this._removedAsteroids;
   }
 
-  get totalAsteroidsCount() {
+  get totalAsteroidsCount(): number {
     return this._totalAsteroids;
   }
 
-  get ingameTime() {
+  get ingameTime(): number {
     return +(
       (this._gameEndTimestamp - this._gameStartTimestamp) /
       1000
     ).toFixed(0);
   }
 
-  get settings() {
+  get settings(): GameSettings {
     return this._settings;
   }
 
+  get shipRadius(): number {
+    return this._R;
+  }
+
   launch() {
-    if (this._currentGameState === GameState.InGame && !this._isStopped)
-      throw "Launch Error";
+    if (this._isStopped) throw new GameLauchError("Game is stopped");
+
+    const ship = this.ship!;
 
     this.playSound("launch");
     const difficulty = this.difficulty;
+
+    if (difficulty === Difficulty.Challenging) ship.hp = ship.maxHp = 1;
 
     this._changeGameState(GameState.InGame);
     GameService.clearIntervals(this._intervals);
@@ -434,8 +531,8 @@ export class GameService {
 
           if (r && R && r + R > this.View.distanceBetween(elem, ship) + 5) {
             this.shipCollision({
-              y: this.ship!.pos.y + this._R,
-              x: this.ship!.pos.x + this._R,
+              y: this.ship!.pos.y - this._R / 2,
+              x: this.ship!.pos.x - this._R / 2,
             });
           }
         }
@@ -452,6 +549,7 @@ export class GameService {
     if (this._currentScore > this._bestScore) {
       this._bestScore = this._currentScore;
       this._currentScore = 0;
+      this._isStopped = false;
 
       this.emitters.bestScore.emit(this._bestScore);
     }
@@ -460,13 +558,15 @@ export class GameService {
     this._scoreRate = 100;
     this._currentScore = 0;
     this._gameEndTimestamp = Date.now();
+    this.ship!.hp = this._stdHp;
+    this.ship!.maxHp = this._stdMaxHp;
 
     this._endSound && this.playSound("break");
     this.navTo(GameState.EndScreen);
   }
 
   shipCollision(pos: Position) {
-    this.createExplosion(pos, 1000);
+    this.createExplosion(pos, 1500);
     this.endGame();
   }
 
@@ -488,7 +588,6 @@ export class GameService {
   continue() {}
 
   createExplosion(pos: Position, duration: number) {
-    // this.playSound("explosion");
     this.emitters.explosion.emit({ pos, duration });
   }
 
@@ -599,12 +698,16 @@ export interface Position {
 export interface Ship {
   element: HTMLDivElement;
   pos: Position;
+  hp: number;
+  maxHp: number;
 }
 
 export interface MovingShip extends Ship {
   movingSpeed: number;
   moveUp(): void;
   moveDown(): void;
+  moveLeft(): void;
+  moveRight(): void;
 }
 
 export interface Asteroid {
@@ -638,4 +741,15 @@ export interface GameSettings {
     isActive: boolean;
     masterVolume: number;
   };
+}
+
+export interface BasicMovement {
+  direction: "up" | "down" | "left" | "right";
+  from: number;
+  to: number;
+}
+
+export interface ComplexMovement {
+  from: Position;
+  to: Position;
 }

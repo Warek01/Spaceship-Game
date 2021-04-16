@@ -1,7 +1,15 @@
 <div id="game" class="container" [style.height]="height">
+
   <div class="ship-container">
     <div id="ship">
-      <div class="texture"></div>
+      <div class="texture" [hidden]="shipIsHidden"></div>
     </div>
   </div>
+
+  <div id="status-window" [style.opacity]="statusWdOpacity">
+    <div class="content">
+      Hello
+    </div>
+  </div>
+
 </div>

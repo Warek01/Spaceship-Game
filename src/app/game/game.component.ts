@@ -31,9 +31,12 @@ export class GameComponent implements OnInit, OnDestroy, AfterViewInit {
   private _keyDown!: Subscription;
   private _keyUp!: Subscription;
   private _gameElement!: HTMLDivElement;
+  private _statusWdPos!: DOMRect;
 
   asteroids = new Map<number, Asteroid>();
   height!: string;
+  shipIsHidden = false;
+  statusWdOpacity = 1;
 
   @Input() difficulty!: Difficulty;
   @Input() shipTexture!: string;
@@ -53,7 +56,7 @@ export class GameComponent implements OnInit, OnDestroy, AfterViewInit {
 
     obj.style.cssText = `
       top: ${asteroid.initialY}px;
-      left: ${this.View.availWidth - 50}px;
+      left: ${this.View.availWidth + 50}px;
       height: ${asteroid.radius}px;
       width: ${asteroid.radius}px;
       background-image: url(../../assets/img/${asteroid.texture});
@@ -64,8 +67,8 @@ export class GameComponent implements OnInit, OnDestroy, AfterViewInit {
     this._gameElement!.append(obj);
 
     setTimeout(() => {
-      asteroid.rotation && this._rotateAsteroid(obj, asteroid);
       this._moveAsteroid(obj, asteroid);
+      if (asteroid.rotation) this._rotateAsteroid(obj, asteroid);
     }, 50);
   }
 
@@ -106,6 +109,15 @@ export class GameComponent implements OnInit, OnDestroy, AfterViewInit {
       obj.style.transform = transform;
     }
 
+    let i = 0;
+    const intervalId = setInterval(() => {
+      this.shipIsHidden = !this.shipIsHidden;
+      if (++i === 20) {
+        clearInterval(intervalId);
+        this.shipIsHidden = false;
+      }
+    }, 200);
+
     this._keyDown.unsubscribe();
     this._keyUp.unsubscribe();
   }
@@ -121,14 +133,13 @@ export class GameComponent implements OnInit, OnDestroy, AfterViewInit {
   ngAfterViewInit() {
     this._gameElement = <HTMLDivElement>document.getElementById("game");
     this._shipElement = <HTMLDivElement>document.getElementById("ship");
+    this._statusWdPos = document
+      .getElementById("status-window")!
+      .getBoundingClientRect();
 
-    const { left, top } = this._shipElement.getBoundingClientRect();
+    const { x, y } = this._shipElement.getBoundingClientRect();
 
-    this._shipPosition = {
-      x: left,
-      y: top,
-    };
-
+    this._shipPosition = { x, y };
     this._shipRadius = parseInt(getComputedStyle(this._shipElement).height) / 2;
 
     this.Game.set
@@ -140,7 +151,7 @@ export class GameComponent implements OnInit, OnDestroy, AfterViewInit {
       .asteroidRadius(40)
       .asteroidSpeed(450, 50)
       .shipPosition({
-        x: 0,
+        x: 150,
         y: this.View.availHeight / 2 - this._shipRadius,
       });
 
@@ -158,6 +169,23 @@ export class GameComponent implements OnInit, OnDestroy, AfterViewInit {
 
     this.Game.emitters.endGame.subscribe((NULL) => {
       this.endGame();
+    });
+
+    this.Game.emitters.shipMove.subscribe((move) => {
+      if (
+        move.direction === "down" &&
+        move.from <= this._statusWdPos.y - this.Game.shipRadius * 2 &&
+        move.to >= this._statusWdPos.y - this.Game.shipRadius * 2
+      ) {
+        this.statusWdOpacity = 0.25;
+      } else if (
+        move.direction === "up" &&
+        move.from >= this._statusWdPos.y - this.Game.shipRadius * 2 &&
+        move.to <= this._statusWdPos.y - this.Game.shipRadius * 2
+      ) {
+        // alert();
+        this.statusWdOpacity = 1;
+      }
     });
   }
 

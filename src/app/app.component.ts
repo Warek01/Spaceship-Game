@@ -32,7 +32,7 @@ import { SettingsWindowComponent } from "./app-windows/settings/settings.compone
   },
 })
 export class AppComponent implements OnInit, AfterViewInit {
-  private _initialMasterVolume = 10;
+  private _initialMasterVolume = 50;
   private _activeWindow: AppWindowRef | null = null;
   private _openedWindows: AppWindowRef[] = [];
   private _registeredWindows: AppWindow[] = [

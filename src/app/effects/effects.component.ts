@@ -1,5 +1,6 @@
 import { Component, OnInit } from "@angular/core";
 import { GameService, Position } from "../services/game.service";
+import { ViewComputingService } from "../services/viewComputing.service";
 
 @Component({
   selector: "game-effects",
@@ -11,22 +12,26 @@ export class EffectsComponent implements OnInit {
     urlArr: [],
     currentIndex: 0,
     pos: { x: 0, y: 0 },
+    size: 100,
   };
 
-  constructor(private Game: GameService) {
+  constructor(private Game: GameService, private View: ViewComputingService) {
     for (let i = 1; i <= 16; i++)
       this.explosions.urlArr.push(this._getExplosionUrl(i + ".png"));
   }
 
   explode(pos: Position, duration: number) {
+    this.Game.playSound("explosion");
     this.explosions.currentIndex = 1;
-    console.log(pos);
+    console.log(pos, this.explosions.size);
 
     const delay = duration / 16;
     let timer: () => void,
       timerId = setTimeout(
         (timer = () => {
-          this.explosions.pos = pos;
+          this.explosions.pos.y =
+            pos.y + this.View.headerHeight;
+          this.explosions.pos.x = pos.x;
 
           if (this.explosions.currentIndex < 16) {
             this.explosions.currentIndex++;
@@ -55,4 +60,6 @@ export interface Explosions {
   urlArr: string[];
   currentIndex: number;
   pos: Position;
+  /** Width, Height (px) */
+  size: number;
 }
