@@ -1,0 +1,21 @@
+:host {
+  position: absolute;
+  display: block;
+  width: 0;
+  top: 0;
+  left: 0;
+  height: 0;
+  z-index: -1;
+}
+
+.explosion {
+  position: absolute;
+  width: 75px;
+  height: 75px;
+  top: 0;
+  left: 0;
+  object-fit: cover;
+  object-position: center;
+  transition: none;
+  z-index: 103;
+}

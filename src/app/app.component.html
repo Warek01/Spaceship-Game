@@ -1,8 +1,12 @@
-<app-header [app-title]="title" [bestScore]="bestScore" [score]="currentScore" 
-  [game-state]="currentGameState">
-</app-header>
+<app-header 
+  [app-title]="title" 
+  [bestScore]="bestScore" 
+  [score]="currentScore" 
+  [game-state]="currentGameState"
+></app-header>
 
 <router-outlet></router-outlet>
 
-<app-background></app-background>
-<app-game-audio></app-game-audio>
+<game-background></game-background>
+<game-audio></game-audio>
+<game-effects></game-effects>

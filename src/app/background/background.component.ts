@@ -2,7 +2,7 @@ import { Component, OnInit } from "@angular/core";
 import { GameService } from "../services/game.service";
 
 @Component({
-  selector: "app-background",
+  selector: "game-background",
   templateUrl: "./background.component.html",
   styleUrls: ["./background.component.scss"],
 })

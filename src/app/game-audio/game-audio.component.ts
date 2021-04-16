@@ -3,7 +3,7 @@ import { SoundNotFoundError } from "../classes/Errors";
 import { GameService } from "../services/game.service";
 
 @Component({
-  selector: "app-game-audio",
+  selector: "game-audio",
   templateUrl: "./game-audio.component.html",
   styleUrls: ["./game-audio.component.scss"],
 })

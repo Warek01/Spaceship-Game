@@ -138,7 +138,7 @@ export class GameComponent implements OnInit, OnDestroy, AfterViewInit {
         speed: this.View.availHeight / 25,
       })
       .asteroidRadius(40)
-      .asteroidSpeed(500, 0)
+      .asteroidSpeed(450, 50)
       .shipPosition({
         x: 0,
         y: this.View.availHeight / 2 - this._shipRadius,

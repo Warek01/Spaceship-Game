@@ -14,6 +14,7 @@ import { GameAudioComponent } from "./game-audio/game-audio.component";
 import { SettingsWindowComponent } from "./app-windows/settings/settings.component";
 import { WindowComponent } from "./app-windows/window/window.component";
 import { FormsModule } from "@angular/forms";
+import { EffectsComponent } from './effects/effects.component';
 
 @NgModule({
   declarations: [
@@ -27,6 +28,7 @@ import { FormsModule } from "@angular/forms";
     GameAudioComponent,
     SettingsWindowComponent,
     WindowComponent,
+    EffectsComponent,
   ],
   imports: [BrowserModule, AppRoutingModule, HttpClientModule, FormsModule],
   providers: [HttpClientModule],

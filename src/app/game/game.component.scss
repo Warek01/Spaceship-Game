@@ -2,6 +2,10 @@
 @use "../../scss/defaults" as def;
 @use "../../scss/mixins" as mix;
 
+:host {
+  z-index: -1;
+}
+
 .container {
   @include mix.container(false);
 }

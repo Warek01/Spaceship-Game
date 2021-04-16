@@ -115,11 +115,11 @@ export class GameService {
       "asteroid_9.png",
       "asteroid_10.png",
     ],
-    explosion: [],
   };
 
   ship: MovingShip | null = null;
   difficulty: Difficulty = Difficulty.Medium;
+  readonly imgUrl = "./assets/img/";
 
   /** Currently used texture index */
   currentTexture: {
@@ -145,6 +145,7 @@ export class GameService {
     prevBg: new EventEmitter<null>(),
     playSound: new EventEmitter<GameSound>(),
     endGame: new EventEmitter<null>(),
+    explosion: new EventEmitter<{ pos: Position; duration: number }>(),
   };
 
   /** Setters */
@@ -285,19 +286,20 @@ export class GameService {
           clearInterval(self._intervals.keyDown);
           self._currentKeyHeld = e.key.toLowerCase();
 
-          switch (e.key.toLowerCase()) {
-            case "w":
-              self._intervals.keyDown = setInterval(() => {
-                self.ship!.moveUp();
-              }, 25);
-              break;
-
-            case "s":
-              self._intervals.keyDown = setInterval(() => {
-                self.ship!.moveDown();
-              }, 25);
-              break;
-          }
+          if (
+            self._currentKeyHeld === "w" ||
+            self._currentKeyHeld === "arrowup"
+          )
+            self._intervals.keyDown = setInterval(() => {
+              self.ship!.moveUp();
+            }, 25);
+          else if (
+            self._currentKeyHeld === "s" ||
+            self._currentKeyHeld === "arrowdown"
+          )
+            self._intervals.keyDown = setInterval(() => {
+              self.ship!.moveDown();
+            }, 25);
         }
       }.bind(component);
     },
@@ -427,13 +429,13 @@ export class GameService {
 
         const len = asteroids.length;
         for (let i = 0; i < len; i++) {
-          const elem = asteroids[i];
-          const r = parseFloat((elem as HTMLDivElement).style.width) / 2;
+          const elem = <HTMLDivElement>asteroids[i];
+          const r = parseFloat(elem.style.width) / 2;
 
           if (r && R && r + R > this.View.distanceBetween(elem, ship) + 5) {
             this.shipCollision({
-              y: ship.getBoundingClientRect().top,
-              x: ship.getBoundingClientRect().left,
+              y: this.ship!.pos.y + this._R,
+              x: this.ship!.pos.x + this._R,
             });
           }
         }
@@ -464,7 +466,7 @@ export class GameService {
   }
 
   shipCollision(pos: Position) {
-    this.createExplosion(pos, 3000);
+    this.createExplosion(pos, 1000);
     this.endGame();
   }
 
@@ -482,11 +484,12 @@ export class GameService {
   pause() {
     this._changeGameState(GameState.Paused);
   }
+
   continue() {}
 
   createExplosion(pos: Position, duration: number) {
-    this.playSound("explosion");
-    const interval = duration / this.textures.explosion.length;
+    // this.playSound("explosion");
+    this.emitters.explosion.emit({ pos, duration });
   }
 
   generateAsteroid(): Asteroid {
@@ -551,7 +554,7 @@ export class GameService {
   }
 
   getTextureUrl(src: string): string {
-    return `./assets/img/${src}`;
+    return this.imgUrl + src;
   }
 
   getSoundUrl(src: string): string {
@@ -586,7 +589,6 @@ export interface GameTexturesContainer {
   bg: string[];
   ship: string[];
   asteroid: string[];
-  explosion: string[];
 }
 
 export interface Position {
