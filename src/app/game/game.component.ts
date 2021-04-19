@@ -5,14 +5,7 @@ import {
   OnDestroy,
   OnInit,
 } from "@angular/core";
-import { Router } from "@angular/router";
-import {
-  GameService,
-  Asteroid,
-  Position,
-  Difficulty,
-  TransitionType,
-} from "../services/game.service";
+import { GameService, Asteroid, Position } from "../services/game.service";
 import { ViewComputingService } from "../services/viewComputing.service";
 import { fromEvent, Subscription } from "rxjs";
 
@@ -21,7 +14,8 @@ import { fromEvent, Subscription } from "rxjs";
   templateUrl: "./game.component.html",
   styleUrls: ["./game.component.scss"],
   host: {
-    "(window:keydown.F1)": "_nextShip($event)",
+    "(window:keydown.F1)": "_events.nextShip($event)",
+    "(window:keydown.F2)": "_events.kill($event)",
   },
 })
 export class GameComponent implements OnInit, OnDestroy, AfterViewInit {
@@ -44,12 +38,20 @@ export class GameComponent implements OnInit, OnDestroy, AfterViewInit {
   shipHp = 3;
   shipMaxHp = 3;
 
-  @Input() difficulty!: Difficulty;
+  @Input() difficulty!: GameService.Difficulty;
   @Input() shipTexture!: string;
 
   constructor(private View: ViewComputingService, public Game: GameService) {
     this.height = View.availHeight + "px";
   }
+
+  private readonly _events = {
+    kill: (e: KeyboardEvent) => {
+      e.preventDefault();
+      e.stopPropagation();
+      this.Game.endGame(0);
+    },
+  };
 
   private _renderAsteroid(asteroid: Asteroid) {
     const obj = document.createElement("div");
@@ -84,7 +86,7 @@ export class GameComponent implements OnInit, OnDestroy, AfterViewInit {
   private _rotateAsteroid(obj: HTMLDivElement, asteroid: Asteroid) {
     obj.style.transform = `rotateZ(${asteroid.rotation!.degrees}deg)`;
     obj.style.transition = `tranform ${asteroid.rotation?.transitionSpeed} ${
-      TransitionType[asteroid.rotation!.type]
+      GameService.TransitionType[asteroid.rotation!.type]
     }`;
   }
 

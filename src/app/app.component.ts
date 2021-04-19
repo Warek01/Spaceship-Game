@@ -7,7 +7,7 @@ import {
   ViewEncapsulation,
 } from "@angular/core";
 import { ActivatedRoute, Router } from "@angular/router";
-import { GameService, GameState } from "./services/game.service";
+import { GameService } from "./services/game.service";
 import { ViewComputingService } from "./services/viewComputing.service";
 import {
   WindowsService,
@@ -43,7 +43,7 @@ export class AppComponent implements OnInit, AfterViewInit {
   title = "Spaceship";
   currentScore!: number;
   bestScore!: number;
-  currentGameState = GameState.Menu;
+  currentGameState = GameService.GameState.Menu;
   isBestScore = false;
   isPaused = false;
 
@@ -60,27 +60,26 @@ export class AppComponent implements OnInit, AfterViewInit {
   }
 
   private readonly _events = {
-    self: this,
-    onButtonClick(event: MouseEvent) {
+    onButtonClick: (event: MouseEvent) => {
       const target = <HTMLElement>event.target;
 
       if (
         target.tagName.toLowerCase() === "button" ||
         target.parentElement?.tagName.toLowerCase() === "button"
       )
-        this.self.Game.playSound("click-1");
+        this.Game.playSound("click-1");
     },
 
-    trackEscPress(e: KeyboardEvent) {
+    trackEscPress: (e: KeyboardEvent) => {
       e.preventDefault();
     },
 
-    openHelpWindow() {
-      this.self.WdService.open("help");
+    openHelpWindow: () => {
+      this.WdService.open("help");
     },
 
-    enterFullScreen() {
-      this.self.Game.toggleFullscreen();
+    enterFullScreen: () => {
+      this.Game.toggleFullscreen();
     },
   };
 

@@ -1,16 +1,14 @@
 import { Component, OnInit } from "@angular/core";
-import { Difficulty, GameService } from "../services/game.service";
+import { GameService } from "../services/game.service";
 import { ViewComputingService } from "../services/viewComputing.service";
-
-export interface Statistic {
-  description: string;
-  data: number | string | boolean;
-}
 
 @Component({
   selector: "app-end-screen",
   templateUrl: "./end-screen.component.html",
   styleUrls: ["./end-screen.component.scss"],
+  host: {
+    "(window:keydown.space)": "Game.restart()",
+  },
 })
 export class EndScreenComponent implements OnInit {
   stats: Statistic[] = [
@@ -24,11 +22,16 @@ export class EndScreenComponent implements OnInit {
     },
     {
       description: "On diffiulty",
-      data: Difficulty[this.Game.difficulty],
+      data: GameService.Difficulty[this.Game.difficulty],
     },
   ];
 
   constructor(private View: ViewComputingService, private Game: GameService) {}
 
   ngOnInit() {}
+}
+
+interface Statistic {
+  description: string;
+  data: number | string | boolean;
 }

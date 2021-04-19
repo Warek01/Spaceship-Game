@@ -5,34 +5,12 @@ import { GameComponent } from "../game/game.component";
 import { GameSound, SoundId } from "../game-audio/game-audio.component";
 import { GameLauchError } from "../classes/Errors";
 
-export enum GameState {
-  Menu, // default
-  InGame,
-  Paused,
-  EndScreen,
-}
-
-export enum Difficulty {
-  Test = 1,
-  Easy = 2.5,
-  Medium = 5,
-  Hard = 7,
-  Challenging = 9,
-}
-
-export enum TransitionType {
-  "linear",
-  "ease",
-  "ease-in",
-  "ease-in-out",
-}
-
 @Injectable({
   providedIn: "root",
 })
 export class GameService {
   /** ref to GameState enum */
-  static readonly GameState = GameState;
+  // static readonly GameState = GameState;
 
   /** Object with functional intervals ids */
   private readonly _intervals: any = {
@@ -82,7 +60,7 @@ export class GameService {
   private _shipTextureElement!: HTMLDivElement;
   private _shipTransitionDuration!: string;
   /** Where is user now */
-  private _currentGameState = GameState.Menu;
+  private _currentGameState = GameService.GameState.Menu;
   private _gameStartTimestamp!: number;
   private _gameEndTimestamp!: number;
   /** If to play the end sound */
@@ -127,7 +105,7 @@ export class GameService {
   };
 
   ship: MovingShip | null = null;
-  difficulty: Difficulty = Difficulty.Medium;
+  difficulty: GameService.Difficulty = GameService.Difficulty.Medium;
   readonly imgUrl = "./assets/img/";
 
   /** Currently used texture index */
@@ -143,8 +121,8 @@ export class GameService {
   readonly emitters = {
     currentScore: new EventEmitter<number>(),
     bestScore: new EventEmitter<number>(),
-    currentGameState: new EventEmitter<GameState>(),
-    setDifficulty: new EventEmitter<Difficulty>(),
+    currentGameState: new EventEmitter<GameService.GameState>(),
+    setDifficulty: new EventEmitter<GameService.Difficulty>(),
     setShipTexture: new EventEmitter<number>(),
     setBgTexture: new EventEmitter<number>(),
     /** Fires when a new asteroid is generated */
@@ -370,7 +348,7 @@ export class GameService {
       const self = this._self;
       return function (this: GameComponent, e: KeyboardEvent) {
         if (
-          this.Game._currentGameState === GameState.InGame &&
+          this.Game._currentGameState === GameService.GameState.InGame &&
           this.Game.ship &&
           self._currentKeyHeld !== e.key.toLowerCase()
         ) {
@@ -413,7 +391,7 @@ export class GameService {
       const self = this._self;
       return function (this: GameComponent, e: KeyboardEvent) {
         if (
-          this.Game._currentGameState === GameState.InGame &&
+          this.Game._currentGameState === GameService.GameState.InGame &&
           this.Game.ship &&
           self._currentKeyHeld
         ) {
@@ -465,9 +443,91 @@ export class GameService {
     }
   };
 
-  private _changeGameState(state: GameState) {
+  private _changeGameState(state: GameService.GameState) {
     this.emitters.currentGameState.emit(state);
     this._currentGameState = state;
+  }
+
+  private _createExplosion(pos: Position, duration: number) {
+    this.emitters.explosion.emit({ pos, duration });
+  }
+
+  private _generatePickup(): PickupItem | void {
+    const itemId = +(Math.random() *  (GameService.PickupItemId._LENGTH - 1)).toFixed(0);
+
+    const data = this._generateAsteroid();
+    data.texture = "";
+    
+  }
+
+  private _generateAsteroid(): Asteroid {
+    const rotation: RotationZ | null =
+      Math.random() <= 0.75 // 75% chance
+        ? {
+            degrees:
+              +(Math.random() * 100).toFixed(0) +
+              +(Math.random() * 900).toFixed(0), // 0-100 + 0-900 (0-1000)
+            transitionSpeed:
+              +(Math.random() * 3000).toFixed(0) +
+              +(Math.random() * 3000).toFixed(0), // 0-3000 + 0-3000 (0-6000)
+            type: +(Math.random() * 4).toFixed(0),
+          }
+        : null;
+
+    return {
+      texture: `asteroid_${+(Math.random() * 9 + 1).toFixed(0)}.png`,
+      /** Render height (right offscreen) */
+      initialY: +(Math.random() * (this.View.availHeight + this._r)).toFixed(0),
+      /** End height (left offscreen) */
+      finalY: +(Math.random() * (this.View.availHeight + this._r)).toFixed(0),
+      /** Radius from _r to _r + random(0 to _spread) px */
+      radius: +(Math.random() * this._r_spread + this._r).toFixed(0),
+      /** px/s  450 - 550*/
+      velocity: +(Math.random() * this._s_spread + this._s).toFixed(0),
+      rotation,
+    };
+  }
+
+  /** Completely stop & move to end screen */
+  private _stop() {
+    if (this._currentScore > this._bestScore) {
+      this._bestScore = this._currentScore;
+      this._currentScore = 0;
+      this._isStopped = false;
+
+      this.emitters.bestScore.emit(this._bestScore);
+    }
+
+    this._genRate = 1;
+    this._scoreRate = 100;
+    this._currentScore = 0;
+    this._gameEndTimestamp = Date.now();
+    this.ship!.hp = this._stdHp;
+    this.ship!.maxHp = this._stdMaxHp;
+
+    this._endSound && this.playSound("break");
+    this.navTo(GameService.GameState.EndScreen);
+  }
+
+  /** When ship collides into asteroid */
+  private _shipCollision(pos: Position) {
+    const ship = this.ship!;
+
+    ship.hp--;
+    ship.immune = true;
+    this.emitters.hitPoints.emit(ship.hp);
+
+    if (ship.hp > 0) {
+      this._createExplosion(pos, 500);
+
+      this.emitters.shipBlink.emit(this._stdImmuneTime);
+      setTimeout(() => {
+        ship.immune = false;
+      }, this._stdImmuneTime);
+    } else {
+      this._createExplosion(pos, 1500);
+      this.endGame();
+    }
   }
 
   get passedAsteroidsCount(): number {
@@ -501,13 +561,15 @@ export class GameService {
     this.playSound("launch");
     const difficulty = this.difficulty;
 
-    if (difficulty === Difficulty.Challenging) ship.hp = ship.maxHp = 1;
-    else if (difficulty === Difficulty.Test) ship.hp = ship.maxHp = 10;
+    if (difficulty === GameService.Difficulty.Challenging)
+      ship.hp = ship.maxHp = 1;
+    else if (difficulty === GameService.Difficulty.Test)
+      ship.hp = ship.maxHp = 10;
 
     this.emitters.hitPoints.emit(ship.hp);
     this.emitters.maxHitPoints.emit(ship.maxHp);
 
-    this._changeGameState(GameState.InGame);
+    this._changeGameState(GameService.GameState.InGame);
     GameService.clearIntervals(this._intervals);
     this._isStopped = false;
 
@@ -515,7 +577,7 @@ export class GameService {
     this._gameStartTimestamp = Date.now();
 
     this._intervals.asteroid = setInterval(() => {
-      this.emitters.asteroid.emit(this.generateAsteroid());
+      this.emitters.asteroid.emit(this._generateAsteroid());
     }, 3000 / (this._genRate + this.difficulty));
 
     this._intervals.score = setInterval(() => {
@@ -549,7 +611,7 @@ export class GameService {
           const r = parseFloat(elem.style.width) / 2;
 
           if (r && R && r + R > this.View.distanceBetween(elem, ship) + 5) {
-            this.shipCollision({
+            this._shipCollision({
               y: this.ship!.pos.y - this._R / 2,
               x: this.ship!.pos.x - this._R / 2,
             });
@@ -563,54 +625,11 @@ export class GameService {
     );
   }
 
-  // Completely stop & move to end screen
-  stop() {
-    if (this._currentScore > this._bestScore) {
-      this._bestScore = this._currentScore;
-      this._currentScore = 0;
-      this._isStopped = false;
-
-      this.emitters.bestScore.emit(this._bestScore);
-    }
-
-    this._genRate = 1;
-    this._scoreRate = 100;
-    this._currentScore = 0;
-    this._gameEndTimestamp = Date.now();
-    this.ship!.hp = this._stdHp;
-    this.ship!.maxHp = this._stdMaxHp;
-
-    this._endSound && this.playSound("break");
-    this.navTo(GameState.EndScreen);
-  }
-
-  /** When ship collides into asteroid */
-  shipCollision(pos: Position) {
-    const ship = this.ship!;
-
-    ship.hp--;
-    ship.immune = true;
-    this.emitters.hitPoints.emit(ship.hp);
-
-    if (ship.hp > 0) {
-      this.createExplosion(pos, 500);
-
-      this.emitters.shipBlink.emit(this._stdImmuneTime);
-      setTimeout(() => {
-        ship.immune = false;
-      }, this._stdImmuneTime);
-    } else {
-      this.createExplosion(pos, 1500);
-      this.endGame();
-    }
-  }
-
-  /** Stop all entities and nav to end screen in
-   * @param timeout miliseconds
-   * @default timeout 3000
+  /** Stop all entities and nav to end screen
+   * @param timeout delay (miliseconds)
    */
   endGame(timeout?: number) {
-    if (!timeout || (timeout && timeout < 0)) timeout = 3000;
+    if (timeout && timeout < 0) timeout = 3000;
 
     this.emitters.endGame.emit(null);
     GameService.clearIntervals(this._intervals);
@@ -619,46 +638,21 @@ export class GameService {
     clearTimeout(this._rangeCalcTimerId);
     this._rangeCalcTimerId = null;
 
-    setTimeout(this.stop.bind(this), timeout);
+    if (timeout) setTimeout(() => this._stop(), timeout);
+    else this._stop();
+  }
+
+  /** Restart (from end screen) */
+  restart() {
+    this.navTo(GameService.GameState.Menu);
+    this.navTo(GameService.GameState.InGame);
   }
 
   pause() {
-    this._changeGameState(GameState.Paused);
+    this._changeGameState(GameService.GameState.Paused);
   }
 
   continue() {}
-
-  createExplosion(pos: Position, duration: number) {
-    this.emitters.explosion.emit({ pos, duration });
-  }
-
-  generateAsteroid(): Asteroid {
-    const rotation: RotationZ | null =
-      Math.random() <= 0.75 // 75% chance
-        ? {
-            degrees:
-              +(Math.random() * 100).toFixed(0) +
-              +(Math.random() * 900).toFixed(0), // 0-100 + 0-900 (0-1000)
-            transitionSpeed:
-              +(Math.random() * 3000).toFixed(0) +
-              +(Math.random() * 3000).toFixed(0), // 0-3000 + 0-3000 (0-6000)
-            type: +(Math.random() * 4).toFixed(0),
-          }
-        : null;
-
-    return {
-      texture: `asteroid_${+(Math.random() * 9 + 1).toFixed(0)}.png`,
-      /** Render height (right offscreen) */
-      initialY: +(Math.random() * (this.View.availHeight + this._r)).toFixed(0),
-      /** End height (left offscreen) */
-      finalY: +(Math.random() * (this.View.availHeight + this._r)).toFixed(0),
-      /** Radius from _r to _r + random(0 to _spread) px */
-      radius: +(Math.random() * this._r_spread + this._r).toFixed(0),
-      /** px/s  450 - 550*/
-      velocity: +(Math.random() * this._s_spread + this._s).toFixed(0),
-      rotation,
-    };
-  }
 
   /** Save data to LocalStorage */
   save(score: number) {
@@ -667,17 +661,17 @@ export class GameService {
   }
 
   /** Navigate to game state */
-  navTo(state: GameState) {
+  navTo(state: GameService.GameState) {
     if (this._currentGameState !== state) {
       this._changeGameState(state);
       switch (state) {
-        case GameState.Menu:
+        case GameService.GameState.Menu:
           this.Router.navigate(["/menu"]);
           break;
-        case GameState.InGame:
+        case GameService.GameState.InGame:
           this.Router.navigate(["/game"]);
           break;
-        case GameState.EndScreen:
+        case GameService.GameState.EndScreen:
           this.Router.navigate(["/end-screen"]);
           break;
       }
@@ -725,6 +719,37 @@ export class GameService {
   }
 }
 
+export namespace GameService {
+  export enum PickupItemId {
+    Hp,
+    XpBoost,
+    Immunity,
+    _LENGTH
+  }
+
+  export enum GameState {
+    Menu, // -default
+    InGame,
+    Paused,
+    EndScreen,
+  }
+
+  export enum Difficulty {
+    Test = 1,
+    Easy = 2.5,
+    Medium = 5, // -default
+    Hard = 7,
+    Challenging = 9,
+  }
+
+  export enum TransitionType {
+    "linear",
+    "ease",
+    "ease-in",
+    "ease-in-out",
+  }
+}
+
 export type gameMode = "debug" | "release";
 
 export interface GameTexturesContainer {
@@ -763,13 +788,15 @@ export interface Asteroid {
   rotation: RotationZ | null;
 }
 
+export interface PickupItem extends Asteroid {}
+
 export interface RotationZ {
   /** @type deg */
   degrees: number;
   /** @type miliseconds */
   transitionSpeed: number;
   /** ease, ease-in, ease-in-out, linear */
-  type: TransitionType;
+  type: GameService.TransitionType;
 }
 
 export interface ShipConfig {

@@ -1,5 +1,5 @@
 import { Component, OnInit } from "@angular/core";
-import { Difficulty, GameService, GameState } from "../services/game.service";
+import { GameService } from "../services/game.service";
 import { ViewComputingService } from "../services/viewComputing.service";
 
 @Component({
@@ -7,15 +7,15 @@ import { ViewComputingService } from "../services/viewComputing.service";
   templateUrl: "./menu.component.html",
   styleUrls: ["./menu.component.scss"],
   host: {
-    "(window:keydown.space)": "launchGame(1)"
-  }
+    "(window:keydown.space)": "launchGame(1)",
+  },
 })
 export class MenuComponent implements OnInit {
   attributes = {
     height: "500px",
   };
 
-  difficulty: string = Difficulty[this.Game.difficulty];
+  difficulty: string = GameService.Difficulty[this.Game.difficulty];
   texture: string = this.Game.getTextureUrl(
     this.Game.textures.ship[this.Game.currentTexture.ship]
   );
@@ -25,7 +25,7 @@ export class MenuComponent implements OnInit {
   }
 
   launchGame() {
-    this.Game.navTo(GameState.InGame)
+    this.Game.navTo(GameService.GameState.InGame);
   }
 
   nextShipTexture() {
@@ -46,7 +46,9 @@ export class MenuComponent implements OnInit {
     const current = this.Game.currentTexture.ship;
 
     if (current === 0) {
-      this.Game.emitters.setShipTexture.emit(this.Game.textures.ship.length - 1);
+      this.Game.emitters.setShipTexture.emit(
+        this.Game.textures.ship.length - 1
+      );
       this.texture = this.Game.getTextureUrl(
         this.Game.textures.ship[this.Game.textures.ship.length - 1]
       );
@@ -59,51 +61,55 @@ export class MenuComponent implements OnInit {
   }
 
   raiseDifficulty() {
+    const Dif = GameService.Difficulty;
+
     switch (this.difficulty) {
-      case Difficulty[Difficulty.Test]:
-        this.difficulty = Difficulty[Difficulty.Easy];
-        this.Game.emitters.setDifficulty.emit(Difficulty.Easy);
+      case Dif[Dif.Test]:
+        this.difficulty = Dif[Dif.Easy];
+        this.Game.emitters.setDifficulty.emit(Dif.Easy);
         break;
-      case Difficulty[Difficulty.Easy]:
-        this.difficulty = Difficulty[Difficulty.Medium];
-        this.Game.emitters.setDifficulty.emit(Difficulty.Medium);
+      case Dif[Dif.Easy]:
+        this.difficulty = Dif[Dif.Medium];
+        this.Game.emitters.setDifficulty.emit(Dif.Medium);
         break;
-      case Difficulty[Difficulty.Medium]:
-        this.difficulty = Difficulty[Difficulty.Hard];
-        this.Game.emitters.setDifficulty.emit(Difficulty.Hard);
+      case Dif[Dif.Medium]:
+        this.difficulty = Dif[Dif.Hard];
+        this.Game.emitters.setDifficulty.emit(Dif.Hard);
         break;
-      case Difficulty[Difficulty.Hard]:
-        this.difficulty = Difficulty[Difficulty.Challenging];
-        this.Game.emitters.setDifficulty.emit(Difficulty.Challenging);
+      case Dif[Dif.Hard]:
+        this.difficulty = Dif[Dif.Challenging];
+        this.Game.emitters.setDifficulty.emit(Dif.Challenging);
         break;
-      case Difficulty[Difficulty.Challenging]:
-        this.difficulty = Difficulty[Difficulty.Test];
-        this.Game.emitters.setDifficulty.emit(Difficulty.Test);
+      case Dif[Dif.Challenging]:
+        this.difficulty = Dif[Dif.Test];
+        this.Game.emitters.setDifficulty.emit(Dif.Test);
         break;
     }
   }
 
   lowerDifficulty() {
+    const Dif = GameService.Difficulty;
+
     switch (this.difficulty) {
-      case Difficulty[Difficulty.Test]:
-        this.difficulty = Difficulty[Difficulty.Challenging];
-        this.Game.emitters.setDifficulty.emit(Difficulty.Challenging);
+      case Dif[Dif.Test]:
+        this.difficulty = Dif[Dif.Challenging];
+        this.Game.emitters.setDifficulty.emit(Dif.Challenging);
         break;
-      case Difficulty[Difficulty.Challenging]:
-        this.difficulty = Difficulty[Difficulty.Hard];
-        this.Game.emitters.setDifficulty.emit(Difficulty.Hard);
+      case Dif[Dif.Challenging]:
+        this.difficulty = Dif[Dif.Hard];
+        this.Game.emitters.setDifficulty.emit(Dif.Hard);
         break;
-      case Difficulty[Difficulty.Hard]:
-        this.difficulty = Difficulty[Difficulty.Medium];
-        this.Game.emitters.setDifficulty.emit(Difficulty.Medium);
+      case Dif[Dif.Hard]:
+        this.difficulty = Dif[Dif.Medium];
+        this.Game.emitters.setDifficulty.emit(Dif.Medium);
         break;
-      case Difficulty[Difficulty.Medium]:
-        this.difficulty = Difficulty[Difficulty.Easy];
-        this.Game.emitters.setDifficulty.emit(Difficulty.Easy);
+      case Dif[Dif.Medium]:
+        this.difficulty = Dif[Dif.Easy];
+        this.Game.emitters.setDifficulty.emit(Dif.Easy);
         break;
-      case Difficulty[Difficulty.Easy]:
-        this.difficulty = Difficulty[Difficulty.Test];
-        this.Game.emitters.setDifficulty.emit(Difficulty.Test);
+      case Dif[Dif.Easy]:
+        this.difficulty = Dif[Dif.Test];
+        this.Game.emitters.setDifficulty.emit(Dif.Test);
         break;
     }
   }
