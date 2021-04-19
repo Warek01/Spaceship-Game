@@ -23,7 +23,6 @@ export class EffectsComponent implements OnInit {
   explode(pos: Position, duration: number) {
     this.Game.playSound("explosion");
     this.explosions.currentIndex = 1;
-    console.log(pos, this.explosions.size);
 
     const delay = duration / 16;
     let timer: () => void,

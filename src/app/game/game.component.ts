@@ -33,22 +33,22 @@ export class GameComponent implements OnInit, OnDestroy, AfterViewInit {
   private _gameElement!: HTMLDivElement;
   private _statusWdPos!: DOMRect;
 
+  statusWd = {
+    opacity: 1,
+    width: 300,
+    height: 200,
+  };
   asteroids = new Map<number, Asteroid>();
   height!: string;
   shipIsHidden = false;
-  statusWdOpacity = 1;
+  shipHp = 3;
+  shipMaxHp = 3;
 
   @Input() difficulty!: Difficulty;
   @Input() shipTexture!: string;
 
-  constructor(
-    private Router: Router,
-    private View: ViewComputingService,
-    public Game: GameService
-  ) {
+  constructor(private View: ViewComputingService, public Game: GameService) {
     this.height = View.availHeight + "px";
-
-    this.Game.launch();
   }
 
   private _renderAsteroid(asteroid: Asteroid) {
@@ -109,26 +109,83 @@ export class GameComponent implements OnInit, OnDestroy, AfterViewInit {
       obj.style.transform = transform;
     }
 
-    let i = 0;
-    const intervalId = setInterval(() => {
-      this.shipIsHidden = !this.shipIsHidden;
-      if (++i === 20) {
-        clearInterval(intervalId);
-        this.shipIsHidden = false;
-      }
-    }, 200);
+    this.shipBlink(3000);
 
     this._keyDown.unsubscribe();
     this._keyUp.unsubscribe();
   }
 
+  shipBlink(duration: number) {
+    let timePassed = 0;
+    const intervalId = setInterval(() => {
+      this.shipIsHidden = !this.shipIsHidden;
+      timePassed += duration / 20;
+
+      if (timePassed >= duration) {
+        clearInterval(intervalId);
+        this.shipIsHidden = false;
+      }
+    }, duration / 20);
+  }
+
   private _nextShip(event: KeyboardEvent) {
     // Has to change ship texture during gameplay on F1 press
     event.preventDefault();
-    alert();
   }
 
-  ngOnInit() {}
+  ngOnInit() {
+    this._keyDown = fromEvent<KeyboardEvent>(window, "keydown").subscribe(
+      this.Game.track.keyDown(this)
+    );
+
+    this._keyUp = fromEvent<KeyboardEvent>(window, "keyup").subscribe(
+      this.Game.track.keyUp(this)
+    );
+
+    this.Game.emitters.asteroid.subscribe((asteroid) => {
+      this._renderAsteroid(asteroid);
+    });
+
+    this.Game.emitters.endGame.subscribe((NULL) => {
+      this.endGame();
+    });
+
+    this.Game.emitters.shipMove.subscribe((move) => {
+      if (
+        (move.direction === "down" &&
+          move.from <= this._statusWdPos.y - this.Game.shipRadius * 2 &&
+          move.to >= this._statusWdPos.y - this.Game.shipRadius * 2 &&
+          this.Game.ship!.pos.x <= this._statusWdPos.x + this.statusWd.width) ||
+        (move.direction === "left" &&
+          move.from >= this._statusWdPos.x + this.statusWd.width &&
+          move.to <= this._statusWdPos.x + this.statusWd.width &&
+          this.Game.ship!.pos.y >=
+            this._statusWdPos.y - this.Game.shipRadius * 2)
+      )
+        this.statusWd.opacity = 0.25;
+      else if (
+        (move.direction === "up" &&
+          move.from >= this._statusWdPos.y - this.Game.shipRadius * 2 &&
+          move.to <= this._statusWdPos.y - this.Game.shipRadius * 2) ||
+        (move.direction === "right" &&
+          move.from <= this._statusWdPos.x + this.statusWd.width &&
+          move.to >= this._statusWdPos.x + this.statusWd.width)
+      )
+        this.statusWd.opacity = 1;
+    });
+
+    this.Game.emitters.shipBlink.subscribe((duration) => {
+      this.shipBlink(duration);
+    });
+
+    this.Game.emitters.hitPoints.subscribe((val) => {
+      this.shipHp = val;
+    });
+
+    this.Game.emitters.maxHitPoints.subscribe((val) => {
+      this.shipMaxHp = val;
+    });
+  }
 
   ngAfterViewInit() {
     this._gameElement = <HTMLDivElement>document.getElementById("game");
@@ -155,38 +212,7 @@ export class GameComponent implements OnInit, OnDestroy, AfterViewInit {
         y: this.View.availHeight / 2 - this._shipRadius,
       });
 
-    this._keyDown = fromEvent<KeyboardEvent>(window, "keydown").subscribe(
-      this.Game.track.keyDown(this)
-    );
-
-    this._keyUp = fromEvent<KeyboardEvent>(window, "keyup").subscribe(
-      this.Game.track.keyUp(this)
-    );
-
-    this.Game.emitters.asteroid.subscribe((asteroid) => {
-      this._renderAsteroid(asteroid);
-    });
-
-    this.Game.emitters.endGame.subscribe((NULL) => {
-      this.endGame();
-    });
-
-    this.Game.emitters.shipMove.subscribe((move) => {
-      if (
-        move.direction === "down" &&
-        move.from <= this._statusWdPos.y - this.Game.shipRadius * 2 &&
-        move.to >= this._statusWdPos.y - this.Game.shipRadius * 2
-      ) {
-        this.statusWdOpacity = 0.25;
-      } else if (
-        move.direction === "up" &&
-        move.from >= this._statusWdPos.y - this.Game.shipRadius * 2 &&
-        move.to <= this._statusWdPos.y - this.Game.shipRadius * 2
-      ) {
-        // alert();
-        this.statusWdOpacity = 1;
-      }
-    });
+    this.Game.launch();
   }
 
   ngOnDestroy() {}

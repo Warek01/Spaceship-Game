@@ -6,7 +6,7 @@ import { GameSound, SoundId } from "../game-audio/game-audio.component";
 import { GameLauchError } from "../classes/Errors";
 
 export enum GameState {
-  Menu,
+  Menu, // default
   InGame,
   Paused,
   EndScreen,
@@ -31,8 +31,10 @@ export enum TransitionType {
   providedIn: "root",
 })
 export class GameService {
+  /** ref to GameState enum */
   static readonly GameState = GameState;
 
+  /** Object with functional intervals ids */
   private readonly _intervals: any = {
     score: null,
     asteroid: null,
@@ -50,6 +52,7 @@ export class GameService {
 
   private readonly _stdHp = 3;
   private readonly _stdMaxHp = 3;
+  private readonly _stdImmuneTime = 2000;
   private _rangeCalcTimerId: any = null;
   private _currentScore = 0;
   private _bestScore = 0;
@@ -82,6 +85,7 @@ export class GameService {
   private _currentGameState = GameState.Menu;
   private _gameStartTimestamp!: number;
   private _gameEndTimestamp!: number;
+  /** If to play the end sound */
   private _endSound = true;
 
   readonly textures: GameTexturesContainer = {
@@ -135,23 +139,33 @@ export class GameService {
     ship: 0,
   };
 
+  /** All event emitters */
   readonly emitters = {
     currentScore: new EventEmitter<number>(),
     bestScore: new EventEmitter<number>(),
-    shipPosition: new EventEmitter<Position>(),
     currentGameState: new EventEmitter<GameState>(),
     setDifficulty: new EventEmitter<Difficulty>(),
     setShipTexture: new EventEmitter<number>(),
     setBgTexture: new EventEmitter<number>(),
+    /** Fires when a new asteroid is generated */
     asteroid: new EventEmitter<Asteroid>(),
+    /** Count an asteroid */
     countAsteroid: new EventEmitter<null>(),
+    /** Count a deleted (passed) asteroid */
     deleteAsteroid: new EventEmitter<null>(),
     nextBg: new EventEmitter<null>(),
     prevBg: new EventEmitter<null>(),
     playSound: new EventEmitter<GameSound>(),
+    /** Fires when game ends (before stop) */
     endGame: new EventEmitter<null>(),
     explosion: new EventEmitter<{ pos: Position; duration: number }>(),
+    /** Fires when ship moves from a position to another */
     shipMove: new EventEmitter<BasicMovement>(),
+    hitPoints: new EventEmitter<number>(),
+    maxHitPoints: new EventEmitter<number>(),
+    /** Make ship blink (appear and dissapear) for
+     * @argument miliseconds */
+    shipBlink: new EventEmitter<number>(),
   };
 
   /** Setters */
@@ -239,6 +253,7 @@ export class GameService {
         element: ship.element,
         hp: 3,
         maxHp: 3,
+        immune: false,
         pos: {
           x: ship.pos.x,
           y: ship.pos.y,
@@ -487,6 +502,10 @@ export class GameService {
     const difficulty = this.difficulty;
 
     if (difficulty === Difficulty.Challenging) ship.hp = ship.maxHp = 1;
+    else if (difficulty === Difficulty.Test) ship.hp = ship.maxHp = 10;
+
+    this.emitters.hitPoints.emit(ship.hp);
+    this.emitters.maxHitPoints.emit(ship.maxHp);
 
     this._changeGameState(GameState.InGame);
     GameService.clearIntervals(this._intervals);
@@ -519,13 +538,13 @@ export class GameService {
     let timer: any;
     this._rangeCalcTimerId = setTimeout(
       (timer = () => {
-        if (this._isStopped) return;
         const asteroids = document.getElementsByClassName("asteroid");
         const ship = this.ship!.element;
         const R = parseFloat(ship.style.width!) / 2;
 
         const len = asteroids.length;
         for (let i = 0; i < len; i++) {
+          if (this._isStopped || this.ship!.immune) break;
           const elem = <HTMLDivElement>asteroids[i];
           const r = parseFloat(elem.style.width) / 2;
 
@@ -565,12 +584,34 @@ export class GameService {
     this.navTo(GameState.EndScreen);
   }
 
+  /** When ship collides into asteroid */
   shipCollision(pos: Position) {
-    this.createExplosion(pos, 1500);
-    this.endGame();
+    const ship = this.ship!;
+
+    ship.hp--;
+    ship.immune = true;
+    this.emitters.hitPoints.emit(ship.hp);
+
+    if (ship.hp > 0) {
+      this.createExplosion(pos, 500);
+
+      this.emitters.shipBlink.emit(this._stdImmuneTime);
+      setTimeout(() => {
+        ship.immune = false;
+      }, this._stdImmuneTime);
+    } else {
+      this.createExplosion(pos, 1500);
+      this.endGame();
+    }
   }
 
-  endGame(timeout = 3000) {
+  /** Stop all entities and nav to end screen in
+   * @param timeout miliseconds
+   * @default timeout 3000
+   */
+  endGame(timeout?: number) {
+    if (!timeout || (timeout && timeout < 0)) timeout = 3000;
+
     this.emitters.endGame.emit(null);
     GameService.clearIntervals(this._intervals);
 
@@ -597,10 +638,10 @@ export class GameService {
         ? {
             degrees:
               +(Math.random() * 100).toFixed(0) +
-              +(Math.random() * 900).toFixed(0),
+              +(Math.random() * 900).toFixed(0), // 0-100 + 0-900 (0-1000)
             transitionSpeed:
               +(Math.random() * 3000).toFixed(0) +
-              +(Math.random() * 3000).toFixed(0),
+              +(Math.random() * 3000).toFixed(0), // 0-3000 + 0-3000 (0-6000)
             type: +(Math.random() * 4).toFixed(0),
           }
         : null;
@@ -619,11 +660,13 @@ export class GameService {
     };
   }
 
+  /** Save data to LocalStorage */
   save(score: number) {
     localStorage.removeItem("best-score");
     localStorage.setItem("best-score", score.toString());
   }
 
+  /** Navigate to game state */
   navTo(state: GameState) {
     if (this._currentGameState !== state) {
       this._changeGameState(state);
@@ -700,6 +743,7 @@ export interface Ship {
   pos: Position;
   hp: number;
   maxHp: number;
+  immune: boolean;
 }
 
 export interface MovingShip extends Ship {

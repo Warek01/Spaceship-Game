@@ -6,9 +6,21 @@
     </div>
   </div>
 
-  <div id="status-window" [style.opacity]="statusWdOpacity">
+  <div 
+    id="status-window" 
+    [ngStyle]='{
+      opacity: statusWd.opacity,
+      width: statusWd.width + "px",
+      height: statusWd.height + "px"
+    }'
+  >
     <div class="content">
-      Hello
+      <div class="hp">
+        <span>
+          HP: 
+        </span>
+          {{shipHp}} / {{shipMaxHp}}
+      </div>
     </div>
   </div>
 
