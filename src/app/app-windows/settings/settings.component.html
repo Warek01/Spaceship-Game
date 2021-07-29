@@ -11,7 +11,10 @@
     </div>
   </div>
 
-  <div class="option volume">
+  <div 
+    class="option volume"
+    [class.inactive]="!soundIsActive"
+  >
     <span class="description" (click)="volVal.select()">
       Volume
     </span>
@@ -46,6 +49,12 @@
       (keydown)="$event.stopPropagation()"
       (blur)="playSample()"
     > 
+  </div>
+
+  <div class="option reset">
+    <button (click)="resetGame()">
+      Reset
+    </button>
   </div>
 
 </app-window>

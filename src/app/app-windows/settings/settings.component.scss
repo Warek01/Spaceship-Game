@@ -119,3 +119,11 @@ input::-webkit-inner-spin-button {
 input[type="number"] {
   -moz-appearance: textfield;
 }
+
+.inactive {
+  user-select: none;
+  pointer-events: none;
+  filter: opacity(.5);
+
+  transition: filter 300ms ease;
+}

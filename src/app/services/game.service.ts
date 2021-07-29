@@ -9,8 +9,28 @@ import { GameLauchError } from "../classes/Errors";
   providedIn: "root",
 })
 export class GameService {
-  /** ref to GameState enum */
-  // static readonly GameState = GameState;
+  // Game configuration object
+  private readonly config: GameConfigObject = {
+    ship: {
+      immune: false,
+      defaultHp: 3,
+      defaultMaxHp: 3,
+      testHp: 1,
+      testMaxHp: 1,
+      challengingHp: 1,
+      challengingMaxHp: 1,
+      immuneTime: 2000,
+      defaultShipTexture: 0,
+      defaultBg: 0
+    },
+    endGameDelay: 3000,
+    isEndGameDelay: true,
+    sound: {
+      initialVoulmeActive: false,
+      initialVolumeValue: 50,
+      masterVolume: 0, // Equals to initial volume in constructor
+    },
+  };
 
   /** Object with functional intervals ids */
   private readonly _intervals: any = {
@@ -21,16 +41,6 @@ export class GameService {
     keyDown: null,
   };
 
-  private _settings: GameSettings = {
-    sound: {
-      isActive: true,
-      masterVolume: 100,
-    },
-  };
-
-  private readonly _stdHp = 3;
-  private readonly _stdMaxHp = 3;
-  private readonly _stdImmuneTime = 2000;
   private _rangeCalcTimerId: any = null;
   private _currentScore = 0;
   private _bestScore = 0;
@@ -44,6 +54,7 @@ export class GameService {
   private _removedAsteroids = 0;
   /** Total asteroids passed */
   private _totalAsteroids = 0;
+  /** Name of current key held by user */
   private _currentKeyHeld: string | null = null;
   /** Asteroid radius (px) */
   private _r = 40;
@@ -61,7 +72,9 @@ export class GameService {
   private _shipTransitionDuration!: string;
   /** Where is user now */
   private _currentGameState = GameService.GameState.Menu;
+  /** When game started */
   private _gameStartTimestamp!: number;
+  /** When game ended */
   private _gameEndTimestamp!: number;
   /** If to play the end sound */
   private _endSound = true;
@@ -106,6 +119,8 @@ export class GameService {
 
   ship: MovingShip | null = null;
   difficulty: GameService.Difficulty = GameService.Difficulty.Medium;
+  isSoundDisabled = false;
+  /** Images base URL */
   readonly imgUrl = "./assets/img/";
 
   /** Currently used texture index */
@@ -120,7 +135,9 @@ export class GameService {
   /** All event emitters */
   readonly emitters = {
     currentScore: new EventEmitter<number>(),
+    /** Fires when best score happends */
     bestScore: new EventEmitter<number>(),
+    /** Fires when gamestate changes */
     currentGameState: new EventEmitter<GameService.GameState>(),
     setDifficulty: new EventEmitter<GameService.Difficulty>(),
     setShipTexture: new EventEmitter<number>(),
@@ -131,19 +148,26 @@ export class GameService {
     countAsteroid: new EventEmitter<null>(),
     /** Count a deleted (passed) asteroid */
     deleteAsteroid: new EventEmitter<null>(),
+    /** Switch to next game background */
     nextBg: new EventEmitter<null>(),
+    /** Switch to previous game background */
     prevBg: new EventEmitter<null>(),
     playSound: new EventEmitter<GameSound>(),
     /** Fires when game ends (before stop) */
     endGame: new EventEmitter<null>(),
+    /** Creates a new explosion */
     explosion: new EventEmitter<{ pos: Position; duration: number }>(),
     /** Fires when ship moves from a position to another */
     shipMove: new EventEmitter<BasicMovement>(),
+    /** Fires when hp amount changes */
     hitPoints: new EventEmitter<number>(),
+    /** Fires when max hp amount changes */
     maxHitPoints: new EventEmitter<number>(),
     /** Make ship blink (appear and dissapear) for
      * @argument miliseconds */
     shipBlink: new EventEmitter<number>(),
+    /** Fires when game is resetted */
+    reset: new EventEmitter<null>(),
   };
 
   /** Setters */
@@ -214,7 +238,8 @@ export class GameService {
 
       setTimeout(() => {
         this._self.ship!.element.classList.remove("no-transition");
-        this._self.ship!.element.style.transitionDuration = this._self._shipTransitionDuration;
+        this._self.ship!.element.style.transitionDuration =
+          this._self._shipTransitionDuration;
       });
 
       return this;
@@ -336,7 +361,7 @@ export class GameService {
 
     masterVolume(value: number) {
       if (value >= 0 && value <= 100) {
-        this._self._settings.sound.masterVolume = value;
+        this._self.config.sound.masterVolume = value;
       }
     },
   };
@@ -433,6 +458,16 @@ export class GameService {
         this.textures.bg[this.currentTexture.bg]
       })`;
     });
+
+    this.emitters.reset.subscribe((NULL) => {
+      this.emitters.bestScore.emit(0);
+      this.emitters.currentScore.emit(0);
+      this.emitters.setBgTexture.emit(0);
+    });
+
+    this.config.sound.masterVolume = this.config.sound.initialVolumeValue;
+
+    if (!this.config.sound.initialVoulmeActive) this.disableSound();
   }
 
   static clearIntervals = function (intervalsObject: any) {
@@ -453,11 +488,13 @@ export class GameService {
   }
 
   private _generatePickup(): PickupItem | void {
-    const itemId = +(Math.random() *  (GameService.PickupItemId._LENGTH - 1)).toFixed(0);
+    const itemId = +(
+      Math.random() *
+      (GameService.PickupItemId._LENGTH - 1)
+    ).toFixed(0);
 
     const data = this._generateAsteroid();
     data.texture = "";
-    
   }
 
   private _generateAsteroid(): Asteroid {
@@ -502,8 +539,8 @@ export class GameService {
     this._scoreRate = 100;
     this._currentScore = 0;
     this._gameEndTimestamp = Date.now();
-    this.ship!.hp = this._stdHp;
-    this.ship!.maxHp = this._stdMaxHp;
+    this.ship!.hp = this.config.ship.defaultHp;
+    this.ship!.maxHp = this.config.ship.defaultMaxHp;
 
     this._endSound && this.playSound("break");
     this.navTo(GameService.GameState.EndScreen);
@@ -520,13 +557,15 @@ export class GameService {
     if (ship.hp > 0) {
       this._createExplosion(pos, 500);
 
-      this.emitters.shipBlink.emit(this._stdImmuneTime);
+      this.emitters.shipBlink.emit(this.config.ship.immuneTime);
       setTimeout(() => {
         ship.immune = false;
-      }, this._stdImmuneTime);
+      }, this.config.ship.immuneTime);
     } else {
       this._createExplosion(pos, 1500);
-      this.endGame();
+      this.endGame(
+        this.config.isEndGameDelay ? this.config.endGameDelay : null
+      );
     }
   }
 
@@ -545,12 +584,15 @@ export class GameService {
     ).toFixed(0);
   }
 
-  get settings(): GameSettings {
-    return this._settings;
-  }
-
   get shipRadius(): number {
     return this._R;
+  }
+
+  getConfig(): GameConfigObject {
+    const CONFIG = this.config;
+    Object.seal(CONFIG);
+
+    return CONFIG;
   }
 
   launch() {
@@ -561,10 +603,14 @@ export class GameService {
     this.playSound("launch");
     const difficulty = this.difficulty;
 
-    if (difficulty === GameService.Difficulty.Challenging)
-      ship.hp = ship.maxHp = 1;
-    else if (difficulty === GameService.Difficulty.Test)
-      ship.hp = ship.maxHp = 10;
+    ship.immune = this.config.ship.immune;
+    if (difficulty === GameService.Difficulty.Challenging) {
+      ship.hp = this.config.ship.challengingHp;
+      ship.maxHp = this.config.ship.challengingMaxHp;
+    } else if (difficulty === GameService.Difficulty.Test) {
+      ship.hp = this.config.ship.testHp;
+      ship.maxHp = this.config.ship.testMaxHp;
+    }
 
     this.emitters.hitPoints.emit(ship.hp);
     this.emitters.maxHitPoints.emit(ship.maxHp);
@@ -628,8 +674,9 @@ export class GameService {
   /** Stop all entities and nav to end screen
    * @param timeout delay (miliseconds)
    */
-  endGame(timeout?: number) {
+  endGame(timeout?: number | null) {
     if (timeout && timeout < 0) timeout = 3000;
+    else if (timeout === null) timeout = 0;
 
     this.emitters.endGame.emit(null);
     GameService.clearIntervals(this._intervals);
@@ -697,8 +744,8 @@ export class GameService {
     return `./assets/sounds/${src}`;
   }
 
-  playSound(id: SoundId, volume = this._settings.sound.masterVolume) {
-    if (this._settings.sound.isActive)
+  playSound(id: SoundId, volume = this.config.sound.masterVolume) {
+    if (this.config.sound.masterVolume && !this.isSoundDisabled)
       this.emitters.playSound.emit({ id, volume });
   }
 
@@ -711,11 +758,11 @@ export class GameService {
   }
 
   disableSound() {
-    this._settings.sound.isActive = false;
+    this.isSoundDisabled = true;
   }
 
   enableSound() {
-    this._settings.sound.isActive = true;
+    this.isSoundDisabled = false;
   }
 }
 
@@ -724,7 +771,7 @@ export namespace GameService {
     Hp,
     XpBoost,
     Immunity,
-    _LENGTH
+    _LENGTH,
   }
 
   export enum GameState {
@@ -807,13 +854,6 @@ export interface ShipConfig {
   speed?: number;
 }
 
-export interface GameSettings {
-  sound: {
-    isActive: boolean;
-    masterVolume: number;
-  };
-}
-
 export interface BasicMovement {
   direction: "up" | "down" | "left" | "right";
   from: number;
@@ -823,4 +863,26 @@ export interface BasicMovement {
 export interface ComplexMovement {
   from: Position;
   to: Position;
+}
+
+export interface GameConfigObject {
+  ship: {
+    immune: boolean;
+    defaultHp: number;
+    defaultMaxHp: number;
+    testHp: number;
+    testMaxHp: number;
+    challengingHp: number;
+    challengingMaxHp: number;
+    immuneTime: number;
+    defaultShipTexture: number;
+    defaultBg: number;
+  };
+  isEndGameDelay: boolean;
+  endGameDelay: number;
+  sound: {
+    masterVolume: number;
+    initialVoulmeActive: boolean;
+    initialVolumeValue: number;
+  };
 }

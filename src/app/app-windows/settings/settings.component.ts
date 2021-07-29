@@ -1,5 +1,5 @@
 import { Component, OnInit } from "@angular/core";
-import { GameService } from "src/app/services/game.service";
+import { GameService, GameConfigObject } from "src/app/services/game.service";
 
 @Component({
   selector: "app-settings-window",
@@ -10,10 +10,13 @@ export class SettingsWindowComponent implements OnInit {
   title = "Settings";
   soundIsActive!: boolean;
   volume!: number;
+  config!: GameConfigObject;
 
   constructor(private Game: GameService) {
-    this.soundIsActive = Game.settings.sound.isActive;
-    this.volume = Game.settings.sound.masterVolume;
+    this.config = Game.getConfig();
+
+    this.soundIsActive = !Game.isSoundDisabled;
+    this.volume = this.config.sound.masterVolume;
   }
 
   switchSound(fromSwitch?: boolean) {
@@ -64,6 +67,10 @@ export class SettingsWindowComponent implements OnInit {
 
   parseVolume(num: string): string {
     return parseInt(num) > 100 ? "100" : parseInt(num) < 0 ? "0" : num;
+  }
+
+  resetGame(): void {
+    this.Game.emitters.reset.emit(null);
   }
 
   ngOnInit() {}

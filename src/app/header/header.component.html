@@ -14,7 +14,7 @@
       Best score: <br> {{bestScore}}
     </span>
 
-    <span class="best-score-alert" *ngIf="isBestScore">
+    <span class="best-score-alert" *ngIf="isBestScore && bestScore > 0">
       new best!
     </span>
 
