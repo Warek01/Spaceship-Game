@@ -5,14 +5,59 @@ import { GameComponent } from "../game/game.component";
 import { GameSound, SoundId } from "../game-audio/game-audio.component";
 import { GameLauchError } from "../classes/Errors";
 
+export enum PickupItemId {
+  Hp,
+  XpBoost,
+  Immunity,
+  _LENGTH,
+}
+
+export enum GameState {
+  Menu, // -default
+  InGame,
+  Paused,
+  EndScreen,
+}
+
+export enum Difficulty {
+  Test = 1,
+  Easy = 2.5,
+  Medium = 5, // -default
+  Hard = 7,
+  Challenging = 9,
+}
+
+export enum TransitionType {
+  linear,
+  ease,
+  ease_in,
+  ease_in_out,
+}
+
+export enum MovingVector {
+  none,
+  up,
+  down,
+  left,
+  right,
+  up_left,
+  up_right,
+  down_left,
+  down_right,
+}
+
+const V = MovingVector;
+
 @Injectable({
   providedIn: "root",
 })
 export class GameService {
+  static GAME_MODE: GameBuildState = "debug"
+
   // Game configuration object
-  private readonly config: GameConfigObject = {
+  static readonly config: GameConfigObject = {
     ship: {
-      immune: false,
+      immune: true,
       defaultHp: 3,
       defaultMaxHp: 3,
       testHp: 1,
@@ -21,10 +66,12 @@ export class GameService {
       challengingMaxHp: 1,
       immuneTime: 2000,
       defaultShipTexture: 0,
-      defaultBg: 0
+      defaultBg: 0,
     },
     endGameDelay: 3000,
     isEndGameDelay: true,
+    gameMode: GameService.GAME_MODE,
+    popupFade: 300,
     sound: {
       initialVoulmeActive: false,
       initialVolumeValue: 50,
@@ -33,12 +80,15 @@ export class GameService {
   };
 
   /** Object with functional intervals ids */
-  private readonly _intervals: any = {
+  private readonly _intervals: IntervalsObject = {
     score: null,
     asteroid: null,
     asteroidClear: null,
     distance: null,
-    keyDown: null,
+    moveUp: null,
+    moveDown: null,
+    moveLeft: null,
+    moveRight: null,
   };
 
   private _rangeCalcTimerId: any = null;
@@ -54,8 +104,6 @@ export class GameService {
   private _removedAsteroids = 0;
   /** Total asteroids passed */
   private _totalAsteroids = 0;
-  /** Name of current key held by user */
-  private _currentKeyHeld: string | null = null;
   /** Asteroid radius (px) */
   private _r = 40;
   /** Asteroid radius spread (px) */
@@ -66,18 +114,21 @@ export class GameService {
   private _s_spread = 100;
   /** Ship radius (px) */
   private _R = 30;
-  /** (px/tick) */
-  private _shipSpeed = 20;
+  /** seconds to traverse width and height */
+  private _SHIP_X_SPD = 1.25;
+  private _SHIP_Y_SPD = 1.5;
   private _shipTextureElement!: HTMLDivElement;
   private _shipTransitionDuration!: string;
   /** Where is user now */
-  private _currentGameState = GameService.GameState.Menu;
+  private _currentGameState = GameState.Menu;
   /** When game started */
   private _gameStartTimestamp!: number;
   /** When game ended */
   private _gameEndTimestamp!: number;
   /** If to play the end sound */
   private _endSound = true;
+  /** Interval (ms) between calling ship move functions */
+  private _moveInterval = 50;
 
   readonly textures: GameTexturesContainer = {
     bg: [
@@ -118,7 +169,7 @@ export class GameService {
   };
 
   ship: MovingShip | null = null;
-  difficulty: GameService.Difficulty = GameService.Difficulty.Medium;
+  difficulty: Difficulty = Difficulty.Medium;
   isSoundDisabled = false;
   /** Images base URL */
   readonly imgUrl = "./assets/img/";
@@ -138,8 +189,8 @@ export class GameService {
     /** Fires when best score happends */
     bestScore: new EventEmitter<number>(),
     /** Fires when gamestate changes */
-    currentGameState: new EventEmitter<GameService.GameState>(),
-    setDifficulty: new EventEmitter<GameService.Difficulty>(),
+    currentGameState: new EventEmitter<GameState>(),
+    setDifficulty: new EventEmitter<Difficulty>(),
     setShipTexture: new EventEmitter<number>(),
     setBgTexture: new EventEmitter<number>(),
     /** Fires when a new asteroid is generated */
@@ -168,6 +219,16 @@ export class GameService {
     shipBlink: new EventEmitter<number>(),
     /** Fires when game is resetted */
     reset: new EventEmitter<null>(),
+    gameFieldChange: new EventEmitter<Size>(),
+    popup: new EventEmitter<PopupWindow>()
+  };
+
+  /** Name of current key held by user */
+  currentMovingVector: MovingVector = V.none;
+
+  gameField: Size = {
+    width: parseInt(getComputedStyle(document.body).width),
+    height: parseInt(getComputedStyle(document.body).height),
   };
 
   /** Setters */
@@ -208,8 +269,9 @@ export class GameService {
       return this;
     },
 
-    shipSpeed(speed: number) {
-      if (speed > 0) this._self._shipSpeed = speed;
+    shipSpeed(x_spd: number, y_spd: number) {
+      if (x_spd > 0) this._self._SHIP_X_SPD = x_spd;
+      if (y_spd > 0) this._self._SHIP_Y_SPD = y_spd;
 
       return this;
     },
@@ -246,10 +308,7 @@ export class GameService {
     },
 
     ship(ship: ShipConfig) {
-      ship.speed && this.shipSpeed(ship.speed);
-
       const R = ship.radius || this._self._R;
-      const shipSpeed = this._self._shipSpeed;
       const self = this._self;
 
       self.ship = {
@@ -261,82 +320,45 @@ export class GameService {
           x: ship.pos.x,
           y: ship.pos.y,
         },
-        movingSpeed: shipSpeed,
 
         moveDown() {
-          const currentPos = parseInt(getComputedStyle(this.element).top);
-          const nextPos = currentPos + this.movingSpeed;
-
-          if (nextPos < self.View.availHeight - R * 2) {
-            this.pos.y = nextPos;
-            this.element.style.top = nextPos + "px";
-          } else {
-            this.pos.y = self.View.availHeight - R * 2;
-            this.element.style.top = self.View.availHeight - R * 2 + "px";
-          }
-
-          self.emitters.shipMove.emit({
-            direction: "down",
-            from: currentPos,
-            to: nextPos,
-          });
+          // self.emitters.shipMove.emit({
+          //   direction: "down",
+          //   from: currentPos,
+          //   to: nextPos,
+          // });
         },
 
         moveUp() {
-          const currentPos = parseInt(getComputedStyle(this.element).top);
-          const nextPos = currentPos - this.movingSpeed;
-
-          if (nextPos > 0) {
-            this.pos.y = nextPos;
-            this.element.style.top = nextPos + "px";
-          } else {
-            this.pos.y = 0;
-            this.element.style.top = "0px";
-          }
-
-          self.emitters.shipMove.emit({
-            direction: "up",
-            from: currentPos,
-            to: nextPos,
-          });
+          // self.emitters.shipMove.emit({
+          //   direction: "up",
+          //   from: currentPos,
+          //   to: nextPos,
+          // });
         },
 
         moveLeft() {
-          const currentPos = parseInt(getComputedStyle(this.element).left);
-          const nextPos = currentPos - this.movingSpeed;
-
-          if (nextPos > 0) {
-            this.pos.x = nextPos;
-            this.element.style.left = nextPos + "px";
-          } else {
-            this.pos.x = 0;
-            this.element.style.left = 0 + "px";
-          }
-
-          self.emitters.shipMove.emit({
-            direction: "left",
-            from: currentPos,
-            to: nextPos,
-          });
+          // self.emitters.shipMove.emit({
+          //   direction: "left",
+          //   from: currentPos,
+          //   to: nextPos,
+          // });
         },
 
         moveRight() {
-          const currentPos = parseInt(getComputedStyle(this.element).left);
-          const nextPos = currentPos + this.movingSpeed;
+          const x = this.pos.x;
+          const endX = self.gameField.width - self.shipRadius * 2;
+          const seconds = endX / (self.gameField.width - self.ship!.pos.x) * self._SHIP_X_SPD;
+          console.log(seconds);
 
-          if (nextPos < self.View.availWidth - self._R * 2) {
-            this.pos.x = nextPos;
-            this.element.style.left = nextPos + "px";
-          } else {
-            this.pos.x = self.View.availWidth - self._R * 2;
-            this.element.style.left = self.View.availWidth - self._R * 2 + "px";
-          }
+          this.element.style.transition = `all linear ${self._SHIP_X_SPD}s`;
+          this.element.style.left = endX + "px";
 
-          self.emitters.shipMove.emit({
-            direction: "right",
-            from: currentPos,
-            to: nextPos,
-          });
+          // self.emitters.shipMove.emit({
+          //   direction: "right",
+          //   from: currentPos,
+          //   to: nextPos,
+          // });
         },
       };
 
@@ -361,53 +383,30 @@ export class GameService {
 
     masterVolume(value: number) {
       if (value >= 0 && value <= 100) {
-        this._self.config.sound.masterVolume = value;
+        GameService.config.sound.masterVolume = value;
       }
     },
   };
 
-  /** Listeners */
+  /** Listeners (event trackers) */
   readonly track = {
     _self: this,
     keyDown(component: GameComponent) {
+      /** self = GameService */
       const self = this._self;
+
+      /** Event Handler */
       return function (this: GameComponent, e: KeyboardEvent) {
         if (
-          this.Game._currentGameState === GameService.GameState.InGame &&
-          this.Game.ship &&
-          self._currentKeyHeld !== e.key.toLowerCase()
+          this.Game._currentGameState === GameState.InGame &&
+          this.Game.ship
         ) {
-          clearInterval(self._intervals.keyDown);
-          self._currentKeyHeld = e.key.toLowerCase();
+          const key = e.key.toLocaleLowerCase();
 
-          if (
-            self._currentKeyHeld === "w" ||
-            self._currentKeyHeld === "arrowup"
-          )
-            self._intervals.keyDown = setInterval(() => {
-              self.ship!.moveUp();
-            }, 25);
-          else if (
-            self._currentKeyHeld === "s" ||
-            self._currentKeyHeld === "arrowdown"
-          )
-            self._intervals.keyDown = setInterval(() => {
-              self.ship!.moveDown();
-            }, 25);
-          else if (
-            self._currentKeyHeld === "a" ||
-            self._currentKeyHeld === "arrowleft"
-          )
-            self._intervals.keyDown = setInterval(() => {
-              self.ship!.moveLeft();
-            }, 25);
-          else if (
-            self._currentKeyHeld === "d" ||
-            self._currentKeyHeld === "arrowright"
-          )
-            self._intervals.keyDown = setInterval(() => {
-              self.ship!.moveRight();
-            }, 25);
+          if (key === "r" || key === "arrowright") {
+            self.currentMovingVector = V.right;
+            self.ship!.moveRight();
+          }
         }
       }.bind(component);
     },
@@ -415,13 +414,27 @@ export class GameService {
     keyUp(component: GameComponent) {
       const self = this._self;
       return function (this: GameComponent, e: KeyboardEvent) {
+        const key = e.key.toLowerCase();
         if (
-          this.Game._currentGameState === GameService.GameState.InGame &&
-          this.Game.ship &&
-          self._currentKeyHeld
+          this.Game._currentGameState === GameState.InGame &&
+          this.Game.ship
         ) {
-          self._currentKeyHeld = null;
-          clearInterval(self._intervals.keyDown);
+          if (key === "r" || key === "arrowright") {
+            switch (self.currentMovingVector) {
+              case V.right:
+                self.currentMovingVector = V.none;
+                break;
+              case V.up_right:
+                self.currentMovingVector = V.up;
+                break;
+              case V.down_right:
+                self.currentMovingVector = V.down;
+                break;
+            }
+            self.ship!.element.style.left = getComputedStyle(
+              self.ship!.element
+            ).left;
+          }
         }
       }.bind(component);
     },
@@ -432,6 +445,11 @@ export class GameService {
     private Route: ActivatedRoute,
     private View: ViewComputingService
   ) {
+    this.emitters.gameFieldChange.subscribe((size) => {
+      if (size.width >= 0) this.gameField.width = size.width;
+      if (size.height >= 0) this.gameField.height = size.height;
+    });
+
     this.emitters.currentGameState.subscribe((state) => {
       this._currentGameState = state;
     });
@@ -465,9 +483,9 @@ export class GameService {
       this.emitters.setBgTexture.emit(0);
     });
 
-    this.config.sound.masterVolume = this.config.sound.initialVolumeValue;
+    GameService.config.sound.masterVolume = GameService.config.sound.initialVolumeValue;
 
-    if (!this.config.sound.initialVoulmeActive) this.disableSound();
+    if (!GameService.config.sound.initialVoulmeActive) this.disableSound();
   }
 
   static clearIntervals = function (intervalsObject: any) {
@@ -478,7 +496,7 @@ export class GameService {
     }
   };
 
-  private _changeGameState(state: GameService.GameState) {
+  private _changeGameState(state: GameState) {
     this.emitters.currentGameState.emit(state);
     this._currentGameState = state;
   }
@@ -488,10 +506,7 @@ export class GameService {
   }
 
   private _generatePickup(): PickupItem | void {
-    const itemId = +(
-      Math.random() *
-      (GameService.PickupItemId._LENGTH - 1)
-    ).toFixed(0);
+    const itemId = +(Math.random() * (PickupItemId._LENGTH - 1)).toFixed(0);
 
     const data = this._generateAsteroid();
     data.texture = "";
@@ -539,11 +554,11 @@ export class GameService {
     this._scoreRate = 100;
     this._currentScore = 0;
     this._gameEndTimestamp = Date.now();
-    this.ship!.hp = this.config.ship.defaultHp;
-    this.ship!.maxHp = this.config.ship.defaultMaxHp;
+    this.ship!.hp = GameService.config.ship.defaultHp;
+    this.ship!.maxHp = GameService.config.ship.defaultMaxHp;
 
     this._endSound && this.playSound("break");
-    this.navTo(GameService.GameState.EndScreen);
+    this.navTo(GameState.EndScreen);
   }
 
   /** When ship collides into asteroid */
@@ -557,14 +572,14 @@ export class GameService {
     if (ship.hp > 0) {
       this._createExplosion(pos, 500);
 
-      this.emitters.shipBlink.emit(this.config.ship.immuneTime);
+      this.emitters.shipBlink.emit(GameService.config.ship.immuneTime);
       setTimeout(() => {
         ship.immune = false;
-      }, this.config.ship.immuneTime);
+      }, GameService.config.ship.immuneTime);
     } else {
       this._createExplosion(pos, 1500);
       this.endGame(
-        this.config.isEndGameDelay ? this.config.endGameDelay : null
+        GameService.config.isEndGameDelay ? GameService.config.endGameDelay : null
       );
     }
   }
@@ -589,7 +604,7 @@ export class GameService {
   }
 
   getConfig(): GameConfigObject {
-    const CONFIG = this.config;
+    const CONFIG = GameService.config;
     Object.seal(CONFIG);
 
     return CONFIG;
@@ -599,23 +614,24 @@ export class GameService {
     if (this._isStopped) throw new GameLauchError("Game is stopped");
 
     const ship = this.ship!;
+    console.log(this.shipRadius);
 
     this.playSound("launch");
     const difficulty = this.difficulty;
 
-    ship.immune = this.config.ship.immune;
-    if (difficulty === GameService.Difficulty.Challenging) {
-      ship.hp = this.config.ship.challengingHp;
-      ship.maxHp = this.config.ship.challengingMaxHp;
-    } else if (difficulty === GameService.Difficulty.Test) {
-      ship.hp = this.config.ship.testHp;
-      ship.maxHp = this.config.ship.testMaxHp;
+    ship.immune = GameService.config.ship.immune;
+    if (difficulty === Difficulty.Challenging) {
+      ship.hp = GameService.config.ship.challengingHp;
+      ship.maxHp = GameService.config.ship.challengingMaxHp;
+    } else if (difficulty === Difficulty.Test) {
+      ship.hp = GameService.config.ship.testHp;
+      ship.maxHp = GameService.config.ship.testMaxHp;
     }
 
     this.emitters.hitPoints.emit(ship.hp);
     this.emitters.maxHitPoints.emit(ship.maxHp);
 
-    this._changeGameState(GameService.GameState.InGame);
+    this._changeGameState(GameState.InGame);
     GameService.clearIntervals(this._intervals);
     this._isStopped = false;
 
@@ -691,12 +707,12 @@ export class GameService {
 
   /** Restart (from end screen) */
   restart() {
-    this.navTo(GameService.GameState.Menu);
-    this.navTo(GameService.GameState.InGame);
+    this.navTo(GameState.Menu);
+    this.navTo(GameState.InGame);
   }
 
   pause() {
-    this._changeGameState(GameService.GameState.Paused);
+    this._changeGameState(GameState.Paused);
   }
 
   continue() {}
@@ -708,17 +724,17 @@ export class GameService {
   }
 
   /** Navigate to game state */
-  navTo(state: GameService.GameState) {
+  navTo(state: GameState) {
     if (this._currentGameState !== state) {
       this._changeGameState(state);
       switch (state) {
-        case GameService.GameState.Menu:
+        case GameState.Menu:
           this.Router.navigate(["/menu"]);
           break;
-        case GameService.GameState.InGame:
+        case GameState.InGame:
           this.Router.navigate(["/game"]);
           break;
-        case GameService.GameState.EndScreen:
+        case GameState.EndScreen:
           this.Router.navigate(["/end-screen"]);
           break;
       }
@@ -744,8 +760,8 @@ export class GameService {
     return `./assets/sounds/${src}`;
   }
 
-  playSound(id: SoundId, volume = this.config.sound.masterVolume) {
-    if (this.config.sound.masterVolume && !this.isSoundDisabled)
+  playSound(id: SoundId, volume = GameService.config.sound.masterVolume) {
+    if (GameService.config.sound.masterVolume && !this.isSoundDisabled)
       this.emitters.playSound.emit({ id, volume });
   }
 
@@ -764,40 +780,13 @@ export class GameService {
   enableSound() {
     this.isSoundDisabled = false;
   }
-}
 
-export namespace GameService {
-  export enum PickupItemId {
-    Hp,
-    XpBoost,
-    Immunity,
-    _LENGTH,
-  }
-
-  export enum GameState {
-    Menu, // -default
-    InGame,
-    Paused,
-    EndScreen,
-  }
-
-  export enum Difficulty {
-    Test = 1,
-    Easy = 2.5,
-    Medium = 5, // -default
-    Hard = 7,
-    Challenging = 9,
-  }
-
-  export enum TransitionType {
-    "linear",
-    "ease",
-    "ease-in",
-    "ease-in-out",
+  createPopup(popup: PopupWindow) {
+    this.emitters.popup.emit(popup);
   }
 }
 
-export type gameMode = "debug" | "release";
+export type GameBuildState = "debug" | "release";
 
 export interface GameTexturesContainer {
   bg: string[];
@@ -819,7 +808,6 @@ export interface Ship {
 }
 
 export interface MovingShip extends Ship {
-  movingSpeed: number;
   moveUp(): void;
   moveDown(): void;
   moveLeft(): void;
@@ -843,7 +831,7 @@ export interface RotationZ {
   /** @type miliseconds */
   transitionSpeed: number;
   /** ease, ease-in, ease-in-out, linear */
-  type: GameService.TransitionType;
+  type: TransitionType;
 }
 
 export interface ShipConfig {
@@ -865,6 +853,27 @@ export interface ComplexMovement {
   to: Position;
 }
 
+export interface IntervalsObject {
+  score: any;
+  asteroid: any;
+  asteroidClear: any;
+  distance: any;
+  moveUp: any;
+  moveDown: any;
+  moveLeft: any;
+  moveRight: any;
+}
+
+export interface Size {
+  width: number;
+  height: number;
+}
+
+export interface PopupWindow {
+  text: string;
+  duration: number;
+}
+
 export interface GameConfigObject {
   ship: {
     immune: boolean;
@@ -880,6 +889,8 @@ export interface GameConfigObject {
   };
   isEndGameDelay: boolean;
   endGameDelay: number;
+  gameMode: GameBuildState; 
+  popupFade: number;
   sound: {
     masterVolume: number;
     initialVoulmeActive: boolean;

@@ -1,5 +1,5 @@
 import { Component, OnInit } from "@angular/core";
-import { GameService } from "../services/game.service";
+import { GameService, Difficulty } from "../services/game.service";
 import { ViewComputingService } from "../services/viewComputing.service";
 
 @Component({
@@ -22,7 +22,7 @@ export class EndScreenComponent implements OnInit {
     },
     {
       description: "On diffiulty",
-      data: GameService.Difficulty[this.Game.difficulty],
+      data: Difficulty[this.Game.difficulty],
     },
   ];
 

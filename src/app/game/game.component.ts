@@ -5,7 +5,16 @@ import {
   OnDestroy,
   OnInit,
 } from "@angular/core";
-import { GameService, Asteroid, Position } from "../services/game.service";
+
+import {
+  GameService,
+  Asteroid,
+  Position,
+  TransitionType,
+  Difficulty,
+  GameState,
+} from "../services/game.service";
+
 import { ViewComputingService } from "../services/viewComputing.service";
 import { fromEvent, Subscription } from "rxjs";
 
@@ -14,8 +23,13 @@ import { fromEvent, Subscription } from "rxjs";
   templateUrl: "./game.component.html",
   styleUrls: ["./game.component.scss"],
   host: {
-    "(window:keydown.F1)": "_events.nextShip($event)",
-    "(window:keydown.F2)": "_events.kill($event)",
+    "(window:keydown.F1)": "_events.kill($event)",
+    "(window:keydown.F2)":
+      GameService.GAME_MODE === "debug" ? "_events.nextShip($event)" : "",
+    "(window:keydown.F3)":
+      GameService.GAME_MODE === "debug" ? "_events.endGame($event)" : "",
+    "(window:keydown.F4)":
+      GameService.GAME_MODE === "debug" ? "_events.shipImmune($event)" : "",
   },
 })
 export class GameComponent implements OnInit, OnDestroy, AfterViewInit {
@@ -38,18 +52,45 @@ export class GameComponent implements OnInit, OnDestroy, AfterViewInit {
   shipHp = 3;
   shipMaxHp = 3;
 
-  @Input() difficulty!: GameService.Difficulty;
+  @Input() difficulty!: Difficulty;
   @Input() shipTexture!: string;
 
   constructor(private View: ViewComputingService, public Game: GameService) {
     this.height = View.availHeight + "px";
+
+    Game.emitters.gameFieldChange.emit({
+      height: View.availHeight,
+      width: -1,
+    });
   }
 
   private readonly _events = {
-    kill: (e: KeyboardEvent) => {
+    endGame: (e: KeyboardEvent) => {
       e.preventDefault();
       e.stopPropagation();
       this.Game.endGame(0);
+      this.Game.navTo(GameState.Menu);
+    },
+    kill: (e: KeyboardEvent) => {
+      e.preventDefault();
+      e.stopPropagation();
+      this.Game.endGame(this.Game.getConfig().endGameDelay);
+    },
+    nextShip: (e: KeyboardEvent) => {
+      e.preventDefault();
+      e.stopPropagation();
+      /*  */
+    },
+    shipImmune: (e: KeyboardEvent) => {
+      e.preventDefault();
+      e.stopPropagation();
+
+      this.Game.ship!.immune = !this.Game.ship!.immune;
+      
+      this.Game.createPopup({
+        duration: 3000,
+        text: `Immunity: ${this.Game.ship!.immune}`
+      });
     },
   };
 
@@ -86,7 +127,7 @@ export class GameComponent implements OnInit, OnDestroy, AfterViewInit {
   private _rotateAsteroid(obj: HTMLDivElement, asteroid: Asteroid) {
     obj.style.transform = `rotateZ(${asteroid.rotation!.degrees}deg)`;
     obj.style.transition = `tranform ${asteroid.rotation?.transitionSpeed} ${
-      GameService.TransitionType[asteroid.rotation!.type]
+      TransitionType[asteroid.rotation!.type]
     }`;
   }
 
@@ -128,11 +169,6 @@ export class GameComponent implements OnInit, OnDestroy, AfterViewInit {
         this.shipIsHidden = false;
       }
     }, duration / 20);
-  }
-
-  private _nextShip(event: KeyboardEvent) {
-    // Has to change ship texture during gameplay on F1 press
-    event.preventDefault();
   }
 
   ngOnInit() {
@@ -217,5 +253,8 @@ export class GameComponent implements OnInit, OnDestroy, AfterViewInit {
     this.Game.launch();
   }
 
-  ngOnDestroy() {}
+  ngOnDestroy() {
+    this._keyUp.unsubscribe();
+    this._keyDown.unsubscribe();
+  }
 }

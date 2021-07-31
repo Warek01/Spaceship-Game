@@ -2,12 +2,14 @@ import {
   AfterViewInit,
   Component,
   ComponentFactoryResolver,
+  ComponentRef,
   OnInit,
+  Type,
   ViewContainerRef,
   ViewEncapsulation,
 } from "@angular/core";
 import { ActivatedRoute, Router } from "@angular/router";
-import { GameService } from "./services/game.service";
+import { GameService, GameState, PopupWindow } from "./services/game.service";
 import { ViewComputingService } from "./services/viewComputing.service";
 import {
   WindowsService,
@@ -18,6 +20,7 @@ import { HelpWindowComponent } from "./app-windows/help/help.component";
 
 import "./global";
 import { SettingsWindowComponent } from "./app-windows/settings/settings.component";
+import { PopupComponent } from "./popup/popup.component";
 
 @Component({
   selector: "app-root",
@@ -43,7 +46,7 @@ export class AppComponent implements OnInit, AfterViewInit {
   title = "Spaceship";
   currentScore!: number;
   bestScore!: number;
-  currentGameState = GameService.GameState.Menu;
+  currentGameState = GameState.Menu;
   isBestScore = false;
   isPaused = false;
 
@@ -83,6 +86,16 @@ export class AppComponent implements OnInit, AfterViewInit {
     },
   };
 
+  createPopup(popup: PopupWindow) {
+    const ref = this._createComponent(PopupComponent);
+    (ref.instance as any).duration = popup.duration;
+    (ref.instance as any).dataText = popup.text;
+  
+    setTimeout(() => {
+      ref.destroy();
+    }, popup.duration + GameService.config.popupFade);
+  }
+
   ngOnInit() {
     this._registeredWindows.forEach((wd) => {
       this.WdService.registerWindow(wd);
@@ -101,7 +114,17 @@ export class AppComponent implements OnInit, AfterViewInit {
       this.currentGameState = state;
     });
 
+    this.Game.emitters.popup.subscribe((popup: PopupWindow) => {
+      this.createPopup(popup);
+    });
+
     this.Game.set.masterVolume(this._initialMasterVolume);
+  }
+
+  private _createComponent(component: Type<unknown>): ComponentRef<unknown> {
+    const factory = this.Factory.resolveComponentFactory(component);
+    const ref = this.ViewRef.createComponent(factory);
+    return ref;
   }
 
   ngAfterViewInit() {
@@ -109,8 +132,7 @@ export class AppComponent implements OnInit, AfterViewInit {
       this.Router.navigate(["/menu"]);
 
     this.WdService.OpenWindow.subscribe((wd) => {
-      const factory = this.Factory.resolveComponentFactory(wd.component);
-      const ref = this.ViewRef.createComponent(factory);
+      const ref = this._createComponent(wd.component);
       const wnd: AppWindowRef = { ...wd, ref };
 
       this._openedWindows.push(wnd);

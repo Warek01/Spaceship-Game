@@ -4,12 +4,8 @@ declare global {
   }
 }
 
-Array.prototype.has = function <T>(item: T) {
-  let i = this.length;
-
-  while (--i) if (this[i] === item) return true;
-
-  return false;
+Array.prototype.has = function <T>(toFind: T) {
+  return this.findIndex((item) => item === toFind) >= 0;
 };
 
 export default {};

@@ -1,5 +1,5 @@
 import { Component, OnInit } from "@angular/core";
-import { GameService } from "../services/game.service";
+import { GameService, Difficulty, GameState } from "../services/game.service";
 import { ViewComputingService } from "../services/viewComputing.service";
 
 @Component({
@@ -15,7 +15,7 @@ export class MenuComponent implements OnInit {
     height: "500px",
   };
 
-  difficulty: string = GameService.Difficulty[this.Game.difficulty];
+  difficulty: string = Difficulty[this.Game.difficulty];
   texture: string = this.Game.getTextureUrl(
     this.Game.textures.ship[this.Game.currentTexture.ship]
   );
@@ -25,7 +25,7 @@ export class MenuComponent implements OnInit {
   }
 
   launchGame() {
-    this.Game.navTo(GameService.GameState.InGame);
+    this.Game.navTo(GameState.InGame);
   }
 
   nextShipTexture() {
@@ -61,7 +61,7 @@ export class MenuComponent implements OnInit {
   }
 
   raiseDifficulty() {
-    const Dif = GameService.Difficulty;
+    const Dif = Difficulty;
 
     switch (this.difficulty) {
       case Dif[Dif.Test]:
@@ -88,7 +88,7 @@ export class MenuComponent implements OnInit {
   }
 
   lowerDifficulty() {
-    const Dif = GameService.Difficulty;
+    const Dif = Difficulty;
 
     switch (this.difficulty) {
       case Dif[Dif.Test]:

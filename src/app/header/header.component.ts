@@ -7,7 +7,7 @@ import {
   EventEmitter,
 } from "@angular/core";
 import { NavigationEnd, Router } from "@angular/router";
-import { GameService } from "../services/game.service";
+import { GameService, GameState } from "../services/game.service";
 import { ViewComputingService } from "../services/viewComputing.service";
 import { WindowsService } from "../services/windows.service";
 
@@ -21,7 +21,7 @@ export class HeaderComponent implements OnInit, OnChanges {
     bestScore: null,
   };
 
-  GameState = GameService.GameState;
+  GameState = GameState;
   attributes = {
     display: "flex",
     height: "0px",
