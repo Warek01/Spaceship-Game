@@ -7,11 +7,15 @@
   </div>
 
   <div 
-    id="status-window" 
+    id="status-window"
+    [class]="statusWd.class" 
+    [hidden]="statusWd.hidden"
     [ngStyle]='{
       opacity: statusWd.opacity,
       width: statusWd.width + "px",
-      height: statusWd.height + "px"
+      height: statusWd.height + "px",
+      left: statusWd.margin + "px",
+      bottom: statusWd.margin + "px"
     }'
   >
     <div class="content">

@@ -1,5 +1,5 @@
 import { Component, OnInit } from "@angular/core";
-import { GameService, Difficulty } from "../services/game.service";
+import { GameService, Difficulty, GameState } from "../services/game.service";
 import { ViewComputingService } from "../services/viewComputing.service";
 
 @Component({
@@ -8,6 +8,7 @@ import { ViewComputingService } from "../services/viewComputing.service";
   styleUrls: ["./end-screen.component.scss"],
   host: {
     "(window:keydown.space)": "Game.restart()",
+    "(window:keydown.q)": "goToMenu()",
   },
 })
 export class EndScreenComponent implements OnInit {
@@ -25,6 +26,10 @@ export class EndScreenComponent implements OnInit {
       data: Difficulty[this.Game.difficulty],
     },
   ];
+
+  goToMenu() {
+    this.Game.navTo(GameState.Menu);
+  }
 
   constructor(private View: ViewComputingService, private Game: GameService) {}
 

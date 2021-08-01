@@ -1,11 +1,11 @@
 <app-window [window-title]="title" [window-id]="'settings'">
 
   <div class="option sound">
-    <span class="description" (click)="switchSound(true)">
+    <span class="description" (click)="switchSound()">
       Sound
     </span>
     <div class="switch-container">
-      <div class="switch" [class]="soundIsActive? 'active' : ''" (click)="switchSound(true)">
+      <div class="switch" [class]="soundIsActive? 'active' : ''" (click)="switchSound()">
         <div class="circle"></div>
       </div>
     </div>

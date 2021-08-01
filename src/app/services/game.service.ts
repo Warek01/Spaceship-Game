@@ -4,6 +4,7 @@ import { ViewComputingService } from "./viewComputing.service";
 import { GameComponent } from "../game/game.component";
 import { GameSound, SoundId } from "../game-audio/game-audio.component";
 import { GameLauchError } from "../classes/Errors";
+import { equals } from "../global";
 
 export enum PickupItemId {
   Hp,
@@ -34,25 +35,21 @@ export enum TransitionType {
   ease_in_out,
 }
 
-export enum MovingVector {
+export enum MovingDirection {
   none,
   up,
   down,
   left,
   right,
-  up_left,
-  up_right,
-  down_left,
-  down_right,
 }
 
-const V = MovingVector;
+const V = MovingDirection;
 
 @Injectable({
   providedIn: "root",
 })
 export class GameService {
-  static GAME_MODE: GameBuildState = "debug"
+  static GAME_MODE: GameBuildState = "debug";
 
   // Game configuration object
   static readonly config: GameConfigObject = {
@@ -89,6 +86,7 @@ export class GameService {
     moveDown: null,
     moveLeft: null,
     moveRight: null,
+    positionTrack: null,
   };
 
   private _rangeCalcTimerId: any = null;
@@ -115,8 +113,8 @@ export class GameService {
   /** Ship radius (px) */
   private _R = 30;
   /** seconds to traverse width and height */
-  private _SHIP_X_SPD = 1.25;
-  private _SHIP_Y_SPD = 1.5;
+  private _SHIP_X_SPD = 1.5;
+  private _SHIP_Y_SPD = 1;
   private _shipTextureElement!: HTMLDivElement;
   private _shipTransitionDuration!: string;
   /** Where is user now */
@@ -208,8 +206,8 @@ export class GameService {
     endGame: new EventEmitter<null>(),
     /** Creates a new explosion */
     explosion: new EventEmitter<{ pos: Position; duration: number }>(),
-    /** Fires when ship moves from a position to another */
-    shipMove: new EventEmitter<BasicMovement>(),
+    /** Fires regulary with ship position */
+    position: new EventEmitter<Position>(),
     /** Fires when hp amount changes */
     hitPoints: new EventEmitter<number>(),
     /** Fires when max hp amount changes */
@@ -220,15 +218,21 @@ export class GameService {
     /** Fires when game is resetted */
     reset: new EventEmitter<null>(),
     gameFieldChange: new EventEmitter<Size>(),
-    popup: new EventEmitter<PopupWindow>()
+    popup: new EventEmitter<PopupWindow>(),
+    /** Fires when sound is being enabled/disabled */
+    sound: new EventEmitter<boolean>(),
   };
 
   /** Name of current key held by user */
-  currentMovingVector: MovingVector = V.none;
+  movingVector: MovingDirection = V.none;
 
   gameField: Size = {
-    width: parseInt(getComputedStyle(document.body).width),
-    height: parseInt(getComputedStyle(document.body).height),
+    width() {
+      return parseInt(getComputedStyle(document.body).width);
+    },
+    height() {
+      return parseInt(getComputedStyle(document.body).height);
+    },
   };
 
   /** Setters */
@@ -322,43 +326,57 @@ export class GameService {
         },
 
         moveDown() {
-          // self.emitters.shipMove.emit({
-          //   direction: "down",
-          //   from: currentPos,
-          //   to: nextPos,
-          // });
+          if (self.movingVector === V.down) return;
+          self.movingVector = V.down;
+
+          const { y } = this.pos;
+          const endY = self.gameField.height() - self.shipRadius * 2;
+
+          const seconds =
+            (self._SHIP_Y_SPD * (self.gameField.height() - y)) / endY;
+
+          this.element.style.transition = `all linear ${seconds}s`;
+          this.element.style.top = endY + "px";
         },
 
         moveUp() {
-          // self.emitters.shipMove.emit({
-          //   direction: "up",
-          //   from: currentPos,
-          //   to: nextPos,
-          // });
+          if (self.movingVector === V.up) return;
+
+          self.movingVector = V.up;
+
+          const { y } = this.pos;
+          const endY = 0;
+          const seconds = (self._SHIP_Y_SPD * y) / self.gameField.height();
+
+          this.element.style.transition = `all linear ${seconds}s`;
+          this.element.style.top = endY + "px";
         },
 
         moveLeft() {
-          // self.emitters.shipMove.emit({
-          //   direction: "left",
-          //   from: currentPos,
-          //   to: nextPos,
-          // });
+          if (self.movingVector === V.left) return;
+          self.movingVector = V.left;
+
+          const { x } = this.pos;
+          const endX = 0;
+
+          const seconds = (self._SHIP_X_SPD * x) / self.gameField.width();
+
+          this.element.style.transition = `all linear ${seconds}s`;
+          this.element.style.left = endX + "px";
         },
 
         moveRight() {
-          const x = this.pos.x;
-          const endX = self.gameField.width - self.shipRadius * 2;
-          const seconds = endX / (self.gameField.width - self.ship!.pos.x) * self._SHIP_X_SPD;
-          console.log(seconds);
+          if (self.movingVector === V.right) return;
+          self.movingVector = V.right;
 
-          this.element.style.transition = `all linear ${self._SHIP_X_SPD}s`;
+          const { x } = this.pos;
+          const endX = self.gameField.width() - self.shipRadius * 2;
+
+          const seconds =
+            (self._SHIP_X_SPD * (self.gameField.width() - x)) / endX;
+
+          this.element.style.transition = `all linear ${seconds}s`;
           this.element.style.left = endX + "px";
-
-          // self.emitters.shipMove.emit({
-          //   direction: "right",
-          //   from: currentPos,
-          //   to: nextPos,
-          // });
         },
       };
 
@@ -403,10 +421,10 @@ export class GameService {
         ) {
           const key = e.key.toLocaleLowerCase();
 
-          if (key === "r" || key === "arrowright") {
-            self.currentMovingVector = V.right;
-            self.ship!.moveRight();
-          }
+          if (equals(key, ["d", "arrowright"])) self.ship!.moveRight();
+          else if (equals(key, ["a", "arrowleft"])) self.ship!.moveLeft();
+          else if (equals(key, ["w", "arrowup"])) self.ship!.moveUp();
+          else if (equals(key, ["s", "arrowdown"])) self.ship!.moveDown();
         }
       }.bind(component);
     },
@@ -419,21 +437,19 @@ export class GameService {
           this.Game._currentGameState === GameState.InGame &&
           this.Game.ship
         ) {
-          if (key === "r" || key === "arrowright") {
-            switch (self.currentMovingVector) {
-              case V.right:
-                self.currentMovingVector = V.none;
-                break;
-              case V.up_right:
-                self.currentMovingVector = V.up;
-                break;
-              case V.down_right:
-                self.currentMovingVector = V.down;
-                break;
-            }
-            self.ship!.element.style.left = getComputedStyle(
-              self.ship!.element
-            ).left;
+          const ship = self.ship!;
+          if (equals(key, ["d", "arrowright"])) {
+            self.movingVector = V.none;
+            ship.element.style.left = getComputedStyle(ship.element).left;
+          } else if (equals(key, ["a", "arrowleft"])) {
+            self.movingVector = V.none;
+            ship.element.style.left = getComputedStyle(ship.element).left;
+          } else if (equals(key, ["w", "arrowup"])) {
+            self.movingVector = V.none;
+            ship.element.style.top = getComputedStyle(ship.element).top;
+          } else if (equals(key, ["s", "arrowdown"])) {
+            self.movingVector = V.none;
+            ship.element.style.top = getComputedStyle(ship.element).top;
           }
         }
       }.bind(component);
@@ -445,11 +461,6 @@ export class GameService {
     private Route: ActivatedRoute,
     private View: ViewComputingService
   ) {
-    this.emitters.gameFieldChange.subscribe((size) => {
-      if (size.width >= 0) this.gameField.width = size.width;
-      if (size.height >= 0) this.gameField.height = size.height;
-    });
-
     this.emitters.currentGameState.subscribe((state) => {
       this._currentGameState = state;
     });
@@ -481,9 +492,11 @@ export class GameService {
       this.emitters.bestScore.emit(0);
       this.emitters.currentScore.emit(0);
       this.emitters.setBgTexture.emit(0);
+      this.enableSound();
     });
 
-    GameService.config.sound.masterVolume = GameService.config.sound.initialVolumeValue;
+    GameService.config.sound.masterVolume =
+      GameService.config.sound.initialVolumeValue;
 
     if (!GameService.config.sound.initialVoulmeActive) this.disableSound();
   }
@@ -579,7 +592,9 @@ export class GameService {
     } else {
       this._createExplosion(pos, 1500);
       this.endGame(
-        GameService.config.isEndGameDelay ? GameService.config.endGameDelay : null
+        GameService.config.isEndGameDelay
+          ? GameService.config.endGameDelay
+          : null
       );
     }
   }
@@ -614,7 +629,6 @@ export class GameService {
     if (this._isStopped) throw new GameLauchError("Game is stopped");
 
     const ship = this.ship!;
-    console.log(this.shipRadius);
 
     this.playSound("launch");
     const difficulty = this.difficulty;
@@ -642,6 +656,14 @@ export class GameService {
       this.emitters.asteroid.emit(this._generateAsteroid());
     }, 3000 / (this._genRate + this.difficulty));
 
+    // X - Y position tracking
+    this._intervals.positionTrack = setInterval(() => {
+      const { x, y } = this.ship!.element.getBoundingClientRect();
+      this.ship!.pos.x = Math.round(x);
+      this.ship!.pos.y = Math.round(y);
+      this.emitters.position.emit(this.ship!.pos);
+    }, 100);
+
     this._intervals.score = setInterval(() => {
       this._currentScore++;
       this.emitters.currentScore.emit(this._currentScore);
@@ -654,9 +676,11 @@ export class GameService {
 
         const len = asteroids.length;
         for (let i = 0; i < len; i++)
-          if (asteroids[i].getBoundingClientRect().left <= 0)
+          if (asteroids[i] && asteroids[i].getBoundingClientRect().left <= 0)
             asteroids[i].remove();
-      } catch {}
+      } catch (err: unknown) {
+        console.log("Asteroid error: ", err);
+      }
     }, 1000);
 
     let timer: any;
@@ -696,6 +720,11 @@ export class GameService {
 
     this.emitters.endGame.emit(null);
     GameService.clearIntervals(this._intervals);
+
+    const shipElement = this.ship!.element;
+    const { x, y } = this.ship!.pos;
+    shipElement.style.top = y + "px";
+    shipElement.style.left = x + "px";
 
     this._isStopped = true;
     clearTimeout(this._rangeCalcTimerId);
@@ -775,10 +804,12 @@ export class GameService {
 
   disableSound() {
     this.isSoundDisabled = true;
+    this.emitters.sound.emit(false);
   }
 
   enableSound() {
     this.isSoundDisabled = false;
+    this.emitters.sound.emit(true);
   }
 
   createPopup(popup: PopupWindow) {
@@ -848,31 +879,30 @@ export interface BasicMovement {
   to: number;
 }
 
-export interface ComplexMovement {
-  from: Position;
-  to: Position;
-}
-
 export interface IntervalsObject {
-  score: any;
-  asteroid: any;
-  asteroidClear: any;
-  distance: any;
-  moveUp: any;
-  moveDown: any;
-  moveLeft: any;
-  moveRight: any;
+  score: Interval;
+  asteroid: Interval;
+  asteroidClear: Interval;
+  distance: Interval;
+  moveUp: Interval;
+  moveDown: Interval;
+  moveLeft: Interval;
+  moveRight: Interval;
+  positionTrack: Interval;
 }
 
 export interface Size {
-  width: number;
-  height: number;
+  width(): number;
+  height(): number;
 }
 
 export interface PopupWindow {
   text: string;
   duration: number;
 }
+
+export type Timer = any;
+export type Interval = any;
 
 export interface GameConfigObject {
   ship: {
@@ -889,7 +919,7 @@ export interface GameConfigObject {
   };
   isEndGameDelay: boolean;
   endGameDelay: number;
-  gameMode: GameBuildState; 
+  gameMode: GameBuildState;
   popupFade: number;
   sound: {
     masterVolume: number;

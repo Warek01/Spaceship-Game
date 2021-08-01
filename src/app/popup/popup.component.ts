@@ -7,14 +7,12 @@ import { GameService } from "../services/game.service";
   styleUrls: ["./popup.component.scss"],
 })
 export class PopupComponent implements OnInit, OnDestroy {
-  @Input() dataText!: string;
+  @Input() text!: string;
   @Input() duration!: number;
   createdOn!: number;
   hide = false;
 
-  constructor() {
-    this.createdOn = Date.now();
-  }
+  constructor() {}
 
   ngOnDestroy() {
     if (GameService.GAME_MODE === "debug") {
@@ -24,6 +22,8 @@ export class PopupComponent implements OnInit, OnDestroy {
   }
 
   ngOnInit() {
+    this.createdOn = Date.now();
+
     setTimeout(() => {
       this.hide = true;
     }, this.duration);

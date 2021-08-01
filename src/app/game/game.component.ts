@@ -25,11 +25,17 @@ import { fromEvent, Subscription } from "rxjs";
   host: {
     "(window:keydown.F1)": "_events.kill($event)",
     "(window:keydown.F2)":
-      GameService.GAME_MODE === "debug" ? "_events.nextShip($event)" : "",
+      GameService.GAME_MODE === "debug"
+        ? "_events.nextShip($event)"
+        : "_events.PREVENT($event)",
     "(window:keydown.F3)":
-      GameService.GAME_MODE === "debug" ? "_events.endGame($event)" : "",
+      GameService.GAME_MODE === "debug"
+        ? "_events.endGame($event)"
+        : "_events.PREVENT($event)",
     "(window:keydown.F4)":
-      GameService.GAME_MODE === "debug" ? "_events.shipImmune($event)" : "",
+      GameService.GAME_MODE === "debug"
+        ? "_events.shipImmune($event)"
+        : "_events.PREVENT($event)",
   },
 })
 export class GameComponent implements OnInit, OnDestroy, AfterViewInit {
@@ -40,12 +46,20 @@ export class GameComponent implements OnInit, OnDestroy, AfterViewInit {
   private _keyUp!: Subscription;
   private _gameElement!: HTMLDivElement;
   private _statusWdPos!: DOMRect;
+  private _shipImtCd = 250;
+  private _shipImtSwpTmp!: number;
 
   statusWd = {
-    opacity: 1,
     width: 300,
     height: 200,
+    margin: 15,
+    hidden: false,
+    class: "",
+    transparentOpacity: 0.25,
+    defaultOpacity: 1,
+    opacity: 1,
   };
+
   asteroids = new Map<number, Asteroid>();
   height!: string;
   shipIsHidden = false;
@@ -57,14 +71,13 @@ export class GameComponent implements OnInit, OnDestroy, AfterViewInit {
 
   constructor(private View: ViewComputingService, public Game: GameService) {
     this.height = View.availHeight + "px";
-
-    Game.emitters.gameFieldChange.emit({
-      height: View.availHeight,
-      width: -1,
-    });
   }
 
   private readonly _events = {
+    PREVENT(e: Event) {
+      e.preventDefault();
+      e.stopImmediatePropagation();
+    },
     endGame: (e: KeyboardEvent) => {
       e.preventDefault();
       e.stopPropagation();
@@ -85,11 +98,18 @@ export class GameComponent implements OnInit, OnDestroy, AfterViewInit {
       e.preventDefault();
       e.stopPropagation();
 
+      if (
+        this._shipImtSwpTmp &&
+        Date.now() - this._shipImtSwpTmp < this._shipImtCd
+      )
+        return;
+      else this._shipImtSwpTmp = Date.now();
+
       this.Game.ship!.immune = !this.Game.ship!.immune;
-      
+
       this.Game.createPopup({
         duration: 3000,
-        text: `Immunity: ${this.Game.ship!.immune}`
+        text: `Immunity: ${this.Game.ship!.immune}`,
       });
     },
   };
@@ -188,28 +208,17 @@ export class GameComponent implements OnInit, OnDestroy, AfterViewInit {
       this.endGame();
     });
 
-    this.Game.emitters.shipMove.subscribe((move) => {
+    this.Game.emitters.position.subscribe((pos) => {
       if (
-        (move.direction === "down" &&
-          move.from <= this._statusWdPos.y - this.Game.shipRadius * 2 &&
-          move.to >= this._statusWdPos.y - this.Game.shipRadius * 2 &&
-          this.Game.ship!.pos.x <= this._statusWdPos.x + this.statusWd.width) ||
-        (move.direction === "left" &&
-          move.from >= this._statusWdPos.x + this.statusWd.width &&
-          move.to <= this._statusWdPos.x + this.statusWd.width &&
-          this.Game.ship!.pos.y >=
-            this._statusWdPos.y - this.Game.shipRadius * 2)
+        pos.x <= this.statusWd.width + this.statusWd.margin &&
+        pos.y >=
+          this.Game.gameField.height() -
+            (this.statusWd.height +
+              this.statusWd.margin +
+              this.Game.shipRadius * 2)
       )
-        this.statusWd.opacity = 0.25;
-      else if (
-        (move.direction === "up" &&
-          move.from >= this._statusWdPos.y - this.Game.shipRadius * 2 &&
-          move.to <= this._statusWdPos.y - this.Game.shipRadius * 2) ||
-        (move.direction === "right" &&
-          move.from <= this._statusWdPos.x + this.statusWd.width &&
-          move.to >= this._statusWdPos.x + this.statusWd.width)
-      )
-        this.statusWd.opacity = 1;
+        this.statusWd.opacity = this.statusWd.transparentOpacity;
+      else this.statusWd.opacity = this.statusWd.defaultOpacity;
     });
 
     this.Game.emitters.shipBlink.subscribe((duration) => {

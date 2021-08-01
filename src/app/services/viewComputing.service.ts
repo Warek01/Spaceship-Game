@@ -35,5 +35,7 @@ export class ViewComputingService {
     );
   }
 
-  constructor() {}
+  constructor() {
+    window.addEventListener("resize", (e) => {});
+  }
 }

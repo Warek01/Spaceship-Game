@@ -1,5 +1,9 @@
 import { Component, OnInit } from "@angular/core";
-import { GameService, GameConfigObject } from "src/app/services/game.service";
+import {
+  GameService,
+  GameConfigObject,
+  Interval,
+} from "src/app/services/game.service";
 
 @Component({
   selector: "app-settings-window",
@@ -10,40 +14,36 @@ export class SettingsWindowComponent implements OnInit {
   title = "Settings";
   soundIsActive!: boolean;
   volume!: number;
-  config!: GameConfigObject;
+  defaultVolume = GameService.config.sound.initialVolumeValue;
 
   constructor(private Game: GameService) {
-    this.config = Game.getConfig();
-
     this.soundIsActive = !Game.isSoundDisabled;
-    this.volume = this.config.sound.masterVolume;
+    this.volume = this.soundIsActive
+      ? GameService.config.sound.masterVolume
+      : 0;
   }
 
-  switchSound(fromSwitch?: boolean) {
-    let timer: () => void;
-    const interval = 300 / this.volume;
-
+  switchSound() {
     this.soundIsActive = !this.soundIsActive;
+    this.soundIsActive && this.Game.enableSound();
 
-    if (this.soundIsActive) {
-      this.Game.enableSound();
-      if (fromSwitch)
-        setTimeout(
-          (timer = () => {
-            if (++this.volume < 50) setTimeout(timer, interval);
-          }),
-          interval
-        );
-    } else {
-      this.Game.disableSound();
-      if (fromSwitch)
-        setTimeout(
-          (timer = () => {
-            if (--this.volume > 0) setTimeout(timer, interval);
-          }),
-          interval
-        );
-    }
+    if (this.soundIsActive) this.animateRange(0, this.defaultVolume);
+    else this.animateRange(this.defaultVolume, 0);
+  }
+
+  animateRange(from: number, to: number) {
+    let timerId: Interval;
+    const interval = Math.round(300 / from - to);
+    let current = from;
+
+    timerId = setInterval(() => {
+      if (current === to) {
+        this.volume = current;
+        return clearInterval(timerId);
+      }
+      if (from < to) this.volume = current++;
+      else if (from > to) this.volume = current--;
+    }, interval);
   }
 
   changeVolume(value: number) {
@@ -73,5 +73,12 @@ export class SettingsWindowComponent implements OnInit {
     this.Game.emitters.reset.emit(null);
   }
 
-  ngOnInit() {}
+  ngOnInit() {
+    this.Game.emitters.sound.subscribe((state) => {
+      if (state !== this.soundIsActive) {
+        this.switchSound();
+        // this.Game.set.masterVolume(this.volume);
+      }
+    });
+  }
 }

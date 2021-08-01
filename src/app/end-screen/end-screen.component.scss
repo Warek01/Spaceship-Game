@@ -15,11 +15,16 @@
 }
 
 .sub-title {
+  display: flex;
+  justify-content: center;
+  align-items: center;
   text-align: center;
   font-size: 0.75rem;
 
   kbd {
     font-size: 0.75rem;
+    margin-left: 5px;
+    margin-right: 5px;
   }
 }
 

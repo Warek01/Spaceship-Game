@@ -86,11 +86,17 @@ export class AppComponent implements OnInit, AfterViewInit {
     },
   };
 
+  private _existentPopup: ComponentRef<unknown> | null = null;
   createPopup(popup: PopupWindow) {
-    const ref = this._createComponent(PopupComponent);
-    (ref.instance as any).duration = popup.duration;
-    (ref.instance as any).dataText = popup.text;
-  
+    if (this._existentPopup) this._existentPopup.destroy();
+
+    const ref = this._existentPopup = this._createComponent(PopupComponent);
+    const input = <PopupWindow>ref.instance;
+
+    input.duration = popup.duration;
+    input.text = popup.text;
+    ref.changeDetectorRef.detectChanges();
+
     setTimeout(() => {
       ref.destroy();
     }, popup.duration + GameService.config.popupFade);
