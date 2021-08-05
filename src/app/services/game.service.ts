@@ -421,7 +421,7 @@ export class GameService {
   /** Generate a chance and test it */
   generateChance(chance: number): boolean {
     if (chance <= 100 && chance >= 0) {
-      return Math.random() <= chance;
+      return Math.random() <= chance / 100;
     } else throw new ParameterError(chance.toString());
   }
 
