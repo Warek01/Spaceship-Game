@@ -9,3 +9,10 @@
 
   transition: all 20s linear;
 }
+
+.pickup {
+  display: inline-block;
+  position: absolute;
+  border-radius: 50%;
+  z-index: 1;
+}

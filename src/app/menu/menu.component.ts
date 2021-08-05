@@ -1,5 +1,12 @@
 import { Component, OnInit } from "@angular/core";
-import { GameService, Difficulty, GameState } from "../services/game.service";
+import { ParameterError } from "../classes/Errors";
+import { equals } from "../global";
+import {
+  GameService,
+  Difficulty,
+  GameState,
+  texturesContainer,
+} from "../services/game.service";
 import { ViewComputingService } from "../services/viewComputing.service";
 
 @Component({
@@ -8,6 +15,11 @@ import { ViewComputingService } from "../services/viewComputing.service";
   styleUrls: ["./menu.component.scss"],
   host: {
     "(window:keydown.space)": "launchGame(1)",
+    "(window:keydown.1)": "focus(1)",
+    "(window:keydown.2)": "focus(2)",
+    "(window:keydown.3)": "focus(3)",
+    "(window:keydown.4)": "focus(4)",
+    "(window:keydown.5)": "focus(5)",
   },
 })
 export class MenuComponent implements OnInit {
@@ -17,8 +29,9 @@ export class MenuComponent implements OnInit {
 
   difficulty: string = Difficulty[this.Game.difficulty];
   texture: string = this.Game.getTextureUrl(
-    this.Game.textures.ship[this.Game.currentTexture.ship]
+    texturesContainer.ship[this.Game.currentTexture.ship]
   );
+  focusedIndex = 0;
 
   constructor(public Game: GameService, public View: ViewComputingService) {
     this.attributes.height = View.availHeight + "px";
@@ -31,13 +44,13 @@ export class MenuComponent implements OnInit {
   nextShipTexture() {
     const current = this.Game.currentTexture.ship;
 
-    if (current === this.Game.textures.ship.length - 1) {
-      this.Game.emitters.setShipTexture.emit(0);
-      this.texture = this.Game.getTextureUrl(this.Game.textures.ship[0]);
+    if (current === texturesContainer.ship.length - 1) {
+      this.Game.setShipTexture(0);
+      this.texture = this.Game.getTextureUrl(texturesContainer.ship[0]);
     } else {
-      this.Game.emitters.setShipTexture.emit(current + 1);
+      this.Game.setShipTexture(current + 1);
       this.texture = this.Game.getTextureUrl(
-        this.Game.textures.ship[current + 1]
+        texturesContainer.ship[current + 1]
       );
     }
   }
@@ -46,17 +59,30 @@ export class MenuComponent implements OnInit {
     const current = this.Game.currentTexture.ship;
 
     if (current === 0) {
-      this.Game.emitters.setShipTexture.emit(
-        this.Game.textures.ship.length - 1
-      );
+      this.Game.setShipTexture(texturesContainer.ship.length - 1);
       this.texture = this.Game.getTextureUrl(
-        this.Game.textures.ship[this.Game.textures.ship.length - 1]
+        texturesContainer.ship[texturesContainer.ship.length - 1]
       );
     } else {
-      this.Game.emitters.setShipTexture.emit(current - 1);
+      this.Game.setShipTexture(current - 1);
       this.texture = this.Game.getTextureUrl(
-        this.Game.textures.ship[current - 1]
+        texturesContainer.ship[current - 1]
       );
+    }
+  }
+
+  focus(index: number) {
+    if (index < 0 || index > 9) throw new ParameterError("Wrong index", index);
+    this.focusedIndex = index;
+
+    window.removeEventListener("keypress", this._trackFocus);
+    window.addEventListener("keypress", this._trackFocus);
+  }
+
+  private _trackFocus(e: KeyboardEvent) {
+    const key = e.key.toLowerCase();
+    if (equals(key, ["a", "leftarrow"])) {
+      
     }
   }
 

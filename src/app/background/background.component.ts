@@ -1,5 +1,5 @@
 import { Component, OnInit } from "@angular/core";
-import { GameService } from "../services/game.service";
+import { GameService, texturesContainer } from "../services/game.service";
 
 @Component({
   selector: "game-background",
@@ -12,7 +12,7 @@ export class BackgroundComponent implements OnInit {
   bgIndex = 1;
 
   constructor(public Game: GameService) {
-    Game.textures.bg.forEach((url) => {
+    texturesContainer.bg.forEach((url) => {
       this.bgUrls.push(Game.getTextureUrl(url));
     });
 

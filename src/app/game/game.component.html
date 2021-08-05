@@ -1,7 +1,7 @@
 <div id="game" class="container" [style.height]="height">
 
   <div class="ship-container">
-    <div id="ship">
+    <div id="ship" class="entity">
       <div class="texture" [hidden]="shipIsHidden"></div>
     </div>
   </div>
@@ -23,7 +23,7 @@
         <span>
           HP: 
         </span>
-          {{shipHp}} / {{shipMaxHp}}
+          {{hp}} / {{maxHp}}
       </div>
     </div>
   </div>

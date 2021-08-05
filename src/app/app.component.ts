@@ -35,7 +35,6 @@ import { PopupComponent } from "./popup/popup.component";
   },
 })
 export class AppComponent implements OnInit, AfterViewInit {
-  private _initialMasterVolume = 50;
   private _activeWindow: AppWindowRef | null = null;
   private _openedWindows: AppWindowRef[] = [];
   private _registeredWindows: AppWindow[] = [
@@ -124,7 +123,6 @@ export class AppComponent implements OnInit, AfterViewInit {
       this.createPopup(popup);
     });
 
-    this.Game.set.masterVolume(this._initialMasterVolume);
   }
 
   private _createComponent(component: Type<unknown>): ComponentRef<unknown> {

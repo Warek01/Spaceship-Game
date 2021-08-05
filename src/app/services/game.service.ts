@@ -1,10 +1,17 @@
 import { Injectable, EventEmitter } from "@angular/core";
-import { ActivatedRoute, Router } from "@angular/router";
+import { Router } from "@angular/router";
 import { ViewComputingService } from "./viewComputing.service";
 import { GameComponent } from "../game/game.component";
 import { GameSound, SoundId } from "../game-audio/game-audio.component";
-import { GameLauchError } from "../classes/Errors";
-import { equals } from "../global";
+import { GameLauchError, ParameterError } from "../classes/Errors";
+import { and, equals } from "../global";
+
+import {
+  Difficulty,
+  GameDifficulties,
+  GameDifficultyConfig,
+} from "../Difficulties";
+export { Difficulty, GameDifficulties, GameDifficultyConfig };
 
 export enum PickupItemId {
   Hp,
@@ -18,14 +25,6 @@ export enum GameState {
   InGame,
   Paused,
   EndScreen,
-}
-
-export enum Difficulty {
-  Test = 1,
-  Easy = 2.5,
-  Medium = 5, // -default
-  Hard = 7,
-  Challenging = 9,
 }
 
 export enum TransitionType {
@@ -45,6 +44,44 @@ export enum MovingDirection {
 
 const V = MovingDirection;
 
+export const texturesContainer: GameTexturesContainer = {
+  bg: [
+    "game_bg_1.jpg",
+    "game_bg_2.jpg",
+    "game_bg_3.jpg",
+    "game_bg_4.jpg",
+    "game_bg_5.jpg",
+    "game_bg_6.jpg",
+    "game_bg_7.jpg",
+    "game_bg_8.jpg",
+    "game_bg_9.jpg",
+    "game_bg_10.jpg",
+    "game_bg_11.jpg",
+    "game_bg_12.jpg",
+  ],
+  ship: [
+    "ship_1.png",
+    "ship_2.png",
+    "ship_3.png",
+    "ship_4.png",
+    "ship_5.png",
+    "ship_6.png",
+    "ship_7.png",
+  ],
+  asteroid: [
+    "asteroid_1.png",
+    "asteroid_2.png",
+    "asteroid_3.png",
+    "asteroid_4.png",
+    "asteroid_5.png",
+    "asteroid_6.png",
+    "asteroid_7.png",
+    "asteroid_8.png",
+    "asteroid_9.png",
+    "asteroid_10.png",
+  ],
+};
+
 @Injectable({
   providedIn: "root",
 })
@@ -55,16 +92,16 @@ export class GameService {
   static readonly config: GameConfigObject = {
     ship: {
       immune: true,
-      defaultHp: 3,
-      defaultMaxHp: 3,
-      testHp: 1,
-      testMaxHp: 1,
-      challengingHp: 1,
-      challengingMaxHp: 1,
       immuneTime: 2000,
       defaultShipTexture: 0,
       defaultBg: 0,
+      defaultPosition: {
+        x: 150,
+        y: 300,
+      },
+      defaultSize: 50,
     },
+    pickupGenerationInterval: 1000,
     endGameDelay: 3000,
     isEndGameDelay: true,
     gameMode: GameService.GAME_MODE,
@@ -87,13 +124,11 @@ export class GameService {
     moveLeft: null,
     moveRight: null,
     positionTrack: null,
+    pickupGeneration: null,
   };
 
-  private _rangeCalcTimerId: any = null;
   private _currentScore = 0;
   private _bestScore = 0;
-  /** Astroid generation rate */
-  private _genRate = 1;
   /** (ms) */
   private _scoreRate = 100;
   /** If game is stopped */
@@ -112,11 +147,12 @@ export class GameService {
   private _s_spread = 100;
   /** Ship radius (px) */
   private _R = 30;
+  private _shellRadius = 5;
   /** seconds to traverse width and height */
   private _SHIP_X_SPD = 1.5;
   private _SHIP_Y_SPD = 1;
-  private _shipTextureElement!: HTMLDivElement;
-  private _shipTransitionDuration!: string;
+  private _SHELL_X_SPD = 1.25;
+  private _shipElement!: HTMLDivElement;
   /** Where is user now */
   private _currentGameState = GameState.Menu;
   /** When game started */
@@ -125,50 +161,11 @@ export class GameService {
   private _gameEndTimestamp!: number;
   /** If to play the end sound */
   private _endSound = true;
-  /** Interval (ms) between calling ship move functions */
-  private _moveInterval = 50;
 
-  readonly textures: GameTexturesContainer = {
-    bg: [
-      "game_bg_1.jpg",
-      "game_bg_2.jpg",
-      "game_bg_3.jpg",
-      "game_bg_4.jpg",
-      "game_bg_5.jpg",
-      "game_bg_6.jpg",
-      "game_bg_7.jpg",
-      "game_bg_8.jpg",
-      "game_bg_9.jpg",
-      "game_bg_10.jpg",
-      "game_bg_11.jpg",
-      "game_bg_12.jpg",
-    ],
-    ship: [
-      "ship_1.png",
-      "ship_2.png",
-      "ship_3.png",
-      "ship_4.png",
-      "ship_5.png",
-      "ship_6.png",
-      "ship_7.png",
-    ],
-    asteroid: [
-      "asteroid_1.png",
-      "asteroid_2.png",
-      "asteroid_3.png",
-      "asteroid_4.png",
-      "asteroid_5.png",
-      "asteroid_6.png",
-      "asteroid_7.png",
-      "asteroid_8.png",
-      "asteroid_9.png",
-      "asteroid_10.png",
-    ],
-  };
-
-  ship: MovingShip | null = null;
+  ship!: Ship;
   difficulty: Difficulty = Difficulty.Medium;
   isSoundDisabled = false;
+  itemsPicked = 0;
   /** Images base URL */
   readonly imgUrl = "./assets/img/";
 
@@ -181,6 +178,8 @@ export class GameService {
     ship: 0,
   };
 
+  shipTexture = this.getTextureUrl(texturesContainer.ship[0]);
+
   /** All event emitters */
   readonly emitters = {
     currentScore: new EventEmitter<number>(),
@@ -189,7 +188,6 @@ export class GameService {
     /** Fires when gamestate changes */
     currentGameState: new EventEmitter<GameState>(),
     setDifficulty: new EventEmitter<Difficulty>(),
-    setShipTexture: new EventEmitter<number>(),
     setBgTexture: new EventEmitter<number>(),
     /** Fires when a new asteroid is generated */
     asteroid: new EventEmitter<Asteroid>(),
@@ -221,6 +219,8 @@ export class GameService {
     popup: new EventEmitter<PopupWindow>(),
     /** Fires when sound is being enabled/disabled */
     sound: new EventEmitter<boolean>(),
+    itemPicked: new EventEmitter<PickupItem>(),
+    pickupGererated: new EventEmitter<PickupItem>(),
   };
 
   /** Name of current key held by user */
@@ -235,176 +235,57 @@ export class GameService {
     },
   };
 
-  /** Setters */
-  readonly set = {
-    _self: this,
+  shipMoveUp() {
+    if (this.movingVector === V.up) return;
 
-    asteroidRadius(r: number, spread?: number) {
-      if (r > 0 && r < this._self.View.availHeight / 8) this._self._r = r * 2;
-      if (spread && spread >= 0) this._self._r_spread = spread;
+    this.movingVector = V.up;
 
-      return this;
-    },
+    const { y } = this.ship.pos;
+    const endY = 0;
+    const seconds = (this._SHIP_Y_SPD * y) / this.gameField.height();
 
-    asteroidSpeed(s: number, spread?: number) {
-      if (s > 0) this._self._s = s;
-      if (spread && spread >= 0) this._self._s_spread = spread;
+    this.ship.element.style.transition = `all linear ${seconds}s`;
+    this.ship.element.style.top = endY + "px";
+  }
 
-      return this;
-    },
+  shipMoveLeft() {
+    if (this.movingVector === V.left) return;
+    this.movingVector = V.left;
 
-    shipRadius(r: number) {
-      if (r > 0) this._self._R = r * 2;
+    const { x } = this.ship.pos;
+    const endX = 0;
 
-      return this;
-    },
+    const seconds = (this._SHIP_X_SPD * x) / this.gameField.width();
 
-    _shipTexture(texture: string) {
-      let currentTexture = 0;
+    this.ship.element.style.transition = `all linear ${seconds}s`;
+    this.ship.element.style.left = endX + "px";
+  }
 
-      this._self.textures.ship.forEach((str) => {
-        if (str === texture) {
-          this._self.currentTexture.ship = currentTexture;
-          this._self._shipTextureElement.style.backgroundImage = `url(../../../../assets/img/${texture})`;
-          return;
-        } else currentTexture++;
-      });
+  shipMoveRight() {
+    if (this.movingVector === V.right) return;
+    this.movingVector = V.right;
 
-      return this;
-    },
+    const { x } = this.ship.pos;
+    const endX = this.gameField.width() - this.shipRadius * 2;
 
-    shipSpeed(x_spd: number, y_spd: number) {
-      if (x_spd > 0) this._self._SHIP_X_SPD = x_spd;
-      if (y_spd > 0) this._self._SHIP_Y_SPD = y_spd;
+    const seconds = (this._SHIP_X_SPD * (this.gameField.width() - x)) / endX;
 
-      return this;
-    },
+    this.ship.element.style.transition = `all linear ${seconds}s`;
+    this.ship.element.style.left = endX + "px";
+  }
 
-    shipHitPoints(value: number) {
-      if (value > 0) this._self.ship!.hp = value;
+  shipMoveDown() {
+    if (this.movingVector === V.down) return;
+    this.movingVector = V.down;
 
-      return this;
-    },
+    const { y } = this.ship.pos;
+    const endY = this.gameField.height() - this.shipRadius * 2;
 
-    shipMaxHitPoints(value: number) {
-      if (value > 0) this._self.ship!.maxHp = value;
-      if (value > this._self.ship!.hp) this._self.ship!.hp = value;
+    const seconds = (this._SHIP_Y_SPD * (this.gameField.height() - y)) / endY;
 
-      return this;
-    },
-
-    shipPosition(pos: Position) {
-      this._self.ship!.element.classList.add("no-transition");
-
-      this._self.ship!.element.style.left = pos.x + "px";
-      this._self.ship!.element.style.top = pos.y + "px";
-
-      this._self.ship!.pos.x = pos.x;
-      this._self.ship!.pos.y = pos.y;
-
-      setTimeout(() => {
-        this._self.ship!.element.classList.remove("no-transition");
-        this._self.ship!.element.style.transitionDuration =
-          this._self._shipTransitionDuration;
-      });
-
-      return this;
-    },
-
-    ship(ship: ShipConfig) {
-      const R = ship.radius || this._self._R;
-      const self = this._self;
-
-      self.ship = {
-        element: ship.element,
-        hp: 3,
-        maxHp: 3,
-        immune: false,
-        pos: {
-          x: ship.pos.x,
-          y: ship.pos.y,
-        },
-
-        moveDown() {
-          if (self.movingVector === V.down) return;
-          self.movingVector = V.down;
-
-          const { y } = this.pos;
-          const endY = self.gameField.height() - self.shipRadius * 2;
-
-          const seconds =
-            (self._SHIP_Y_SPD * (self.gameField.height() - y)) / endY;
-
-          this.element.style.transition = `all linear ${seconds}s`;
-          this.element.style.top = endY + "px";
-        },
-
-        moveUp() {
-          if (self.movingVector === V.up) return;
-
-          self.movingVector = V.up;
-
-          const { y } = this.pos;
-          const endY = 0;
-          const seconds = (self._SHIP_Y_SPD * y) / self.gameField.height();
-
-          this.element.style.transition = `all linear ${seconds}s`;
-          this.element.style.top = endY + "px";
-        },
-
-        moveLeft() {
-          if (self.movingVector === V.left) return;
-          self.movingVector = V.left;
-
-          const { x } = this.pos;
-          const endX = 0;
-
-          const seconds = (self._SHIP_X_SPD * x) / self.gameField.width();
-
-          this.element.style.transition = `all linear ${seconds}s`;
-          this.element.style.left = endX + "px";
-        },
-
-        moveRight() {
-          if (self.movingVector === V.right) return;
-          self.movingVector = V.right;
-
-          const { x } = this.pos;
-          const endX = self.gameField.width() - self.shipRadius * 2;
-
-          const seconds =
-            (self._SHIP_X_SPD * (self.gameField.width() - x)) / endX;
-
-          this.element.style.transition = `all linear ${seconds}s`;
-          this.element.style.left = endX + "px";
-        },
-      };
-
-      self._shipTextureElement = <HTMLDivElement>(
-        ship.element.querySelector(".texture")
-      );
-
-      ship.radius && this.shipRadius(ship.radius);
-      ship.texture && this._shipTexture(ship.texture);
-
-      self.ship!.element.style.width = self._R * 2 + "px";
-      self.ship!.element.style.height = self._R * 2 + "px";
-
-      self._shipTransitionDuration = getComputedStyle(
-        ship.element
-      ).transitionDuration;
-
-      this._shipTexture(self.textures.ship[self.currentTexture.ship]);
-
-      return this;
-    },
-
-    masterVolume(value: number) {
-      if (value >= 0 && value <= 100) {
-        GameService.config.sound.masterVolume = value;
-      }
-    },
-  };
+    this.ship.element.style.transition = `all linear ${seconds}s`;
+    this.ship.element.style.top = endY + "px";
+  }
 
   /** Listeners (event trackers) */
   readonly track = {
@@ -421,10 +302,10 @@ export class GameService {
         ) {
           const key = e.key.toLocaleLowerCase();
 
-          if (equals(key, ["d", "arrowright"])) self.ship!.moveRight();
-          else if (equals(key, ["a", "arrowleft"])) self.ship!.moveLeft();
-          else if (equals(key, ["w", "arrowup"])) self.ship!.moveUp();
-          else if (equals(key, ["s", "arrowdown"])) self.ship!.moveDown();
+          if (equals(key, ["d", "arrowright"])) self.shipMoveRight();
+          else if (equals(key, ["a", "arrowleft"])) self.shipMoveLeft();
+          else if (equals(key, ["w", "arrowup"])) self.shipMoveUp();
+          else if (equals(key, ["s", "arrowdown"])) self.shipMoveDown();
         }
       }.bind(component);
     },
@@ -456,11 +337,7 @@ export class GameService {
     },
   };
 
-  constructor(
-    private Router: Router,
-    private Route: ActivatedRoute,
-    private View: ViewComputingService
-  ) {
+  constructor(private Router: Router, private View: ViewComputingService) {
     this.emitters.currentGameState.subscribe((state) => {
       this._currentGameState = state;
     });
@@ -477,14 +354,10 @@ export class GameService {
       this.difficulty = diff;
     });
 
-    this.emitters.setShipTexture.subscribe((index) => {
-      this.currentTexture.ship = index;
-    });
-
     this.emitters.setBgTexture.subscribe((index) => {
       this.currentTexture.bg = index;
       document.body.style.backgroundImage = `url(../../assets/img/${
-        this.textures.bg[this.currentTexture.bg]
+        texturesContainer.bg[this.currentTexture.bg]
       })`;
     });
 
@@ -493,6 +366,10 @@ export class GameService {
       this.emitters.currentScore.emit(0);
       this.emitters.setBgTexture.emit(0);
       this.enableSound();
+    });
+
+    this.emitters.itemPicked.subscribe((item) => {
+      this.itemsPicked++;
     });
 
     GameService.config.sound.masterVolume =
@@ -518,37 +395,58 @@ export class GameService {
     this.emitters.explosion.emit({ pos, duration });
   }
 
-  private _generatePickup(): PickupItem | void {
-    const itemId = +(Math.random() * (PickupItemId._LENGTH - 1)).toFixed(0);
+  private _generatePickup(): PickupItem {
+    const itemId = PickupItemId[this.genRandomInt(0, PickupItemId._LENGTH - 1)];
 
-    const data = this._generateAsteroid();
-    data.texture = "";
+    const item: PickupItem = {
+      type: itemId,
+      initialY: this.genRandomInt(-100, this.gameField.height() + 100),
+      finalY: this.genRandomInt(-100, this.gameField.height() + 100),
+      radius: 30,
+      texture: "",
+      speed: 2000,
+    };
+
+    return item;
+  }
+
+  genRandomInt(from: number, to: number): number {
+    return Math.round(this.genRandomFloat(from, to));
+  }
+
+  genRandomFloat(from: number, to: number): number {
+    return Math.random() * (to - from) + from;
+  }
+
+  /** Generate a chance and test it */
+  generateChance(chance: number): boolean {
+    if (chance <= 100 && chance >= 0) {
+      return Math.random() <= chance;
+    } else throw new ParameterError(chance.toString());
   }
 
   private _generateAsteroid(): Asteroid {
-    const rotation: RotationZ | null =
-      Math.random() <= 0.75 // 75% chance
-        ? {
-            degrees:
-              +(Math.random() * 100).toFixed(0) +
-              +(Math.random() * 900).toFixed(0), // 0-100 + 0-900 (0-1000)
-            transitionSpeed:
-              +(Math.random() * 3000).toFixed(0) +
-              +(Math.random() * 3000).toFixed(0), // 0-3000 + 0-3000 (0-6000)
-            type: +(Math.random() * 4).toFixed(0),
-          }
-        : null;
+    const rotation: RotationZ | null = this.generateChance(75) // 75% chance
+      ? {
+          degrees: this.genRandomInt(0, 1000),
+          transitionSpeed: this.genRandomInt(1000, 6000),
+          type: this.genRandomInt(0, 4),
+        }
+      : null;
 
     return {
-      texture: `asteroid_${+(Math.random() * 9 + 1).toFixed(0)}.png`,
+      texture: `asteroid_${this.genRandomInt(1, 10)}.png`,
       /** Render height (right offscreen) */
-      initialY: +(Math.random() * (this.View.availHeight + this._r)).toFixed(0),
+      initialY: this.genRandomFloat(
+        -100,
+        this.View.availHeight + 100 + this._r
+      ),
       /** End height (left offscreen) */
-      finalY: +(Math.random() * (this.View.availHeight + this._r)).toFixed(0),
+      finalY: this.genRandomFloat(-100, this.View.availHeight + 100 + this._r),
       /** Radius from _r to _r + random(0 to _spread) px */
-      radius: +(Math.random() * this._r_spread + this._r).toFixed(0),
+      radius: this.genRandomFloat(this._r, this._r + this._r_spread),
       /** px/s  450 - 550*/
-      velocity: +(Math.random() * this._s_spread + this._s).toFixed(0),
+      velocity: this.genRandomFloat(this._s, this._s_spread + this._s),
       rotation,
     };
   }
@@ -562,13 +460,13 @@ export class GameService {
 
       this.emitters.bestScore.emit(this._bestScore);
     }
+    this._autosave();
 
-    this._genRate = 1;
     this._scoreRate = 100;
     this._currentScore = 0;
     this._gameEndTimestamp = Date.now();
-    this.ship!.hp = GameService.config.ship.defaultHp;
-    this.ship!.maxHp = GameService.config.ship.defaultMaxHp;
+    // this.ship!.hp = GameService.config.ship.defaultHp;
+    // this.ship!.maxHp = GameService.config.ship.defaultMaxHp;
 
     this._endSound && this.playSound("break");
     this.navTo(GameState.EndScreen);
@@ -625,44 +523,101 @@ export class GameService {
     return CONFIG;
   }
 
-  launch() {
+  launch(difficulty?: GameDifficultyConfig) {
     if (this._isStopped) throw new GameLauchError("Game is stopped");
 
-    const ship = this.ship!;
-
-    this.playSound("launch");
-    const difficulty = this.difficulty;
-
-    ship.immune = GameService.config.ship.immune;
-    if (difficulty === Difficulty.Challenging) {
-      ship.hp = GameService.config.ship.challengingHp;
-      ship.maxHp = GameService.config.ship.challengingMaxHp;
-    } else if (difficulty === Difficulty.Test) {
-      ship.hp = GameService.config.ship.testHp;
-      ship.maxHp = GameService.config.ship.testMaxHp;
-    }
-
-    this.emitters.hitPoints.emit(ship.hp);
-    this.emitters.maxHitPoints.emit(ship.maxHp);
-
-    this._changeGameState(GameState.InGame);
     GameService.clearIntervals(this._intervals);
-    this._isStopped = false;
+    this._changeGameState(GameState.InGame);
 
-    this.difficulty = difficulty;
+    this._isStopped = false;
     this._gameStartTimestamp = Date.now();
 
-    this._intervals.asteroid = setInterval(() => {
-      this.emitters.asteroid.emit(this._generateAsteroid());
-    }, 3000 / (this._genRate + this.difficulty));
+    this.playSound("launch");
 
-    // X - Y position tracking
+    const CONF = GameService.config;
+
+    if (difficulty)
+      this.ship = {
+        element: this._shipElement,
+        hp: difficulty.hp.initial,
+        maxHp: difficulty.hp.max,
+        ammo: difficulty.ammo.initial,
+        maxAmmo: difficulty.ammo.max,
+        immune: CONF.ship.immune,
+        size: CONF.ship.defaultSize,
+        pos: {
+          x: GameService.config.ship.defaultPosition.x,
+          y: this.View.availHeight / 2 - this._R,
+        },
+      };
+    else {
+      const local = GameDifficulties.get(this.difficulty)!;
+
+      this.ship = {
+        element: this._shipElement,
+        hp: local.hp.initial,
+        maxHp: local.hp.max,
+        ammo: local.ammo.initial,
+        maxAmmo: local.ammo.max,
+        immune: CONF.ship.immune,
+        size: CONF.ship.defaultSize,
+        pos: {
+          x: GameService.config.ship.defaultPosition.x,
+          y: this.View.availHeight / 2 - this._R,
+        },
+      };
+    }
+
+    const s = this.ship;
+
+    s.element.style.width = this.ship.size + "px";
+    s.element.style.height = this.ship.size + "px";
+    this._R = this.ship.size;
+
+    s.element.querySelector<HTMLDivElement>(
+      ".texture"
+    )!.style.backgroundImage = `url(${this.shipTexture})`;
+
+    // Asteroid generation
+    this._intervals.asteroid = setInterval(
+      () => {
+        this.emitters.asteroid.emit(this._generateAsteroid());
+      },
+      difficulty
+        ? difficulty.asteroidGenRate
+        : GameDifficulties.get(this.difficulty)!.asteroidGenRate
+    );
+
+    // X - Y position tracking for all entities
     this._intervals.positionTrack = setInterval(() => {
-      const { x, y } = this.ship!.element.getBoundingClientRect();
-      this.ship!.pos.x = Math.round(x);
-      this.ship!.pos.y = Math.round(y);
-      this.emitters.position.emit(this.ship!.pos);
-    }, 100);
+      const entities = document.getElementsByClassName("entity");
+
+      for (let i = 0; i < entities.length; i++) {
+        if (entities[i].id === "ship") {
+          // Update ship position
+          const { x, y } = entities[i].getBoundingClientRect();
+          s.pos.x = Math.round(x);
+          s.pos.y = Math.round(y);
+        } else if (entities[i].classList.contains("asteroid")) {
+          // Check for asteroid collision
+          if (
+            and(
+              !this.ship.immune,
+              !this._isStopped,
+              this._r + this._R >
+                this.View.distanceBetween(entities[i], this.ship.element)
+            )
+          )
+            this._shipCollision({
+              y: this.ship!.pos.y - this._R / 2,
+              x: this.ship!.pos.x - this._R / 2,
+            });
+        } else if (entities[i].classList.contains("pickup")) {
+        }
+      }
+
+      this.emitters.position.emit(s.pos);
+    }, 1000 / 60 /* 60 tps */);
 
     this._intervals.score = setInterval(() => {
       this._currentScore++;
@@ -683,32 +638,10 @@ export class GameService {
       }
     }, 1000);
 
-    let timer: any;
-    this._rangeCalcTimerId = setTimeout(
-      (timer = () => {
-        const asteroids = document.getElementsByClassName("asteroid");
-        const ship = this.ship!.element;
-        const R = parseFloat(ship.style.width!) / 2;
-
-        const len = asteroids.length;
-        for (let i = 0; i < len; i++) {
-          if (this._isStopped || this.ship!.immune) break;
-          const elem = <HTMLDivElement>asteroids[i];
-          const r = parseFloat(elem.style.width) / 2;
-
-          if (r && R && r + R > this.View.distanceBetween(elem, ship) + 5) {
-            this._shipCollision({
-              y: this.ship!.pos.y - this._R / 2,
-              x: this.ship!.pos.x - this._R / 2,
-            });
-          }
-        }
-        this._rangeCalcTimerId = this._rangeCalcTimerId
-          ? setTimeout(timer, 25)
-          : null;
-      }),
-      25
-    );
+    this._intervals.pickupGeneration = setInterval(() => {
+      const item = this._generatePickup();
+      this.emitters.pickupGererated.emit(item);
+    }, CONF.pickupGenerationInterval);
   }
 
   /** Stop all entities and nav to end screen
@@ -727,8 +660,6 @@ export class GameService {
     shipElement.style.left = x + "px";
 
     this._isStopped = true;
-    clearTimeout(this._rangeCalcTimerId);
-    this._rangeCalcTimerId = null;
 
     if (timeout) setTimeout(() => this._stop(), timeout);
     else this._stop();
@@ -736,6 +667,9 @@ export class GameService {
 
   /** Restart (from end screen) */
   restart() {
+    this._isStopped = false;
+    GameService.clearIntervals(this._intervals);
+
     this.navTo(GameState.Menu);
     this.navTo(GameState.InGame);
   }
@@ -750,6 +684,21 @@ export class GameService {
   save(score: number) {
     localStorage.removeItem("best-score");
     localStorage.setItem("best-score", score.toString());
+  }
+
+  private _autosave() {
+    this.save(this._bestScore);
+  }
+
+  setShipElement(element: HTMLDivElement) {
+    this._shipElement = element;
+  }
+
+  setShipTexture(index: number) {
+    if (index < 0 || index > texturesContainer.ship.length - 1)
+      throw new ParameterError("Wrong index", index);
+    this.currentTexture.ship = index;
+    this.shipTexture = this.getTextureUrl(texturesContainer.ship[index]);
   }
 
   /** Navigate to game state */
@@ -768,6 +717,10 @@ export class GameService {
           break;
       }
     }
+  }
+
+  shoot(from: Position, to: Position) {
+    const particle = <HTMLDivElement>document.createElement("div");
   }
 
   toggleFullscreen() {
@@ -815,6 +768,13 @@ export class GameService {
   createPopup(popup: PopupWindow) {
     this.emitters.popup.emit(popup);
   }
+
+  setVolume(value: number) {
+    if (value < 0) value = 0;
+    else if (value > 100) value = 100;
+
+    GameService.config.sound.masterVolume = value;
+  }
 }
 
 export type GameBuildState = "debug" | "release";
@@ -835,14 +795,10 @@ export interface Ship {
   pos: Position;
   hp: number;
   maxHp: number;
+  ammo: number;
+  maxAmmo: number;
   immune: boolean;
-}
-
-export interface MovingShip extends Ship {
-  moveUp(): void;
-  moveDown(): void;
-  moveLeft(): void;
-  moveRight(): void;
+  size: number;
 }
 
 export interface Asteroid {
@@ -854,7 +810,14 @@ export interface Asteroid {
   rotation: RotationZ | null;
 }
 
-export interface PickupItem extends Asteroid {}
+export interface PickupItem {
+  texture: string;
+  radius: number;
+  speed: number;
+  initialY: number;
+  finalY: number;
+  type: string;
+}
 
 export interface RotationZ {
   /** @type deg */
@@ -889,6 +852,7 @@ export interface IntervalsObject {
   moveLeft: Interval;
   moveRight: Interval;
   positionTrack: Interval;
+  pickupGeneration: Interval;
 }
 
 export interface Size {
@@ -907,20 +871,17 @@ export type Interval = any;
 export interface GameConfigObject {
   ship: {
     immune: boolean;
-    defaultHp: number;
-    defaultMaxHp: number;
-    testHp: number;
-    testMaxHp: number;
-    challengingHp: number;
-    challengingMaxHp: number;
     immuneTime: number;
     defaultShipTexture: number;
     defaultBg: number;
+    defaultPosition: Position;
+    defaultSize: number;
   };
   isEndGameDelay: boolean;
   endGameDelay: number;
   gameMode: GameBuildState;
   popupFade: number;
+  pickupGenerationInterval: number;
   sound: {
     masterVolume: number;
     initialVoulmeActive: boolean;

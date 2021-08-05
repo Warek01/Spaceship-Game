@@ -1,11 +1,14 @@
 @import url("https://fonts.googleapis.com/css2?family=Roboto:wght@100;300;400&display=fallback");
 @import url("https://fonts.googleapis.com/css2?family=Lexend:wght@100;300;400&display=fallback");
+@import url("https://fonts.googleapis.com/css2?family=Press+Start+2P&display=swap");
+@import url('https://fonts.googleapis.com/css2?family=Tourney&display=swap');
+@import url('https://fonts.googleapis.com/css2?family=Space+Mono&display=swap');
 
 $default: sans-serif;
-$karmatic: "Karmatic Arcade";
-$arcade: "Arcade Interlaced";
-$roboto: "Roboto";
-$lexend: "Lexend";
+$karmatic: "Karmatic Arcade", "Press Start 2P", cursive;
+$arcade: "Arcade Interlaced", 'Tourney', cursive;
+$roboto: "Roboto", 'Space Mono', monospace;
+$lexend: "Lexend", sans-serif;
 $cutive: "CutiveMono-Regular";
 
 @font-face {

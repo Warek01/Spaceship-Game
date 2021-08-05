@@ -99,3 +99,15 @@
     }
   }
 }
+
+.focus-container {
+  display: flex;
+  justify-content: center;
+  align-items: center;
+  padding: 10px;
+  border-radius: 10px;
+}
+
+.focused {
+  border: 1px solid def.$button-red-color;
+}

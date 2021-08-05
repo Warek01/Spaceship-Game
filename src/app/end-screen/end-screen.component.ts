@@ -25,6 +25,10 @@ export class EndScreenComponent implements OnInit {
       description: "On diffiulty",
       data: Difficulty[this.Game.difficulty],
     },
+    {
+      description: "Items picked",
+      data: this.Game.itemsPicked
+    }
   ];
 
   goToMenu() {

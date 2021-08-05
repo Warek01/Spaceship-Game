@@ -53,7 +53,7 @@ export class SettingsWindowComponent implements OnInit {
     )
       this.switchSound();
 
-    this.Game.set.masterVolume(value);
+    this.Game.setVolume(value);
     this.playSample();
   }
 

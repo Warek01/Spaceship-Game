@@ -10,13 +10,15 @@ import {
   GameService,
   Asteroid,
   Position,
-  TransitionType,
-  Difficulty,
   GameState,
+  PickupItem,
+  RotationZ,
+  PickupItemId,
 } from "../services/game.service";
 
 import { ViewComputingService } from "../services/viewComputing.service";
 import { fromEvent, Subscription } from "rxjs";
+import { Difficulty, GameDifficulties } from "../Difficulties";
 
 @Component({
   selector: "app-game",
@@ -40,8 +42,6 @@ import { fromEvent, Subscription } from "rxjs";
 })
 export class GameComponent implements OnInit, OnDestroy, AfterViewInit {
   private _shipElement!: HTMLDivElement;
-  private _shipPosition!: Position;
-  private _shipRadius = 20;
   private _keyDown!: Subscription;
   private _keyUp!: Subscription;
   private _gameElement!: HTMLDivElement;
@@ -63,8 +63,8 @@ export class GameComponent implements OnInit, OnDestroy, AfterViewInit {
   asteroids = new Map<number, Asteroid>();
   height!: string;
   shipIsHidden = false;
-  shipHp = 3;
-  shipMaxHp = 3;
+  hp!: number;
+  maxHp!: number;
 
   @Input() difficulty!: Difficulty;
   @Input() shipTexture!: string;
@@ -92,7 +92,6 @@ export class GameComponent implements OnInit, OnDestroy, AfterViewInit {
     nextShip: (e: KeyboardEvent) => {
       e.preventDefault();
       e.stopPropagation();
-      /*  */
     },
     shipImmune: (e: KeyboardEvent) => {
       e.preventDefault();
@@ -105,14 +104,39 @@ export class GameComponent implements OnInit, OnDestroy, AfterViewInit {
         return;
       else this._shipImtSwpTmp = Date.now();
 
-      this.Game.ship!.immune = !this.Game.ship!.immune;
+      this.Game.ship!.immune = !this.Game.ship.immune;
 
       this.Game.createPopup({
         duration: 3000,
-        text: `Immunity: ${this.Game.ship!.immune}`,
+        text: `Immunity: ${this.Game.ship.immune}`,
       });
     },
   };
+
+  private _renderPickup(pickup: PickupItem) {
+    const obj = document.createElement("div");
+
+    obj.classList.add("pickup", "entity", pickup.type);
+
+    obj.style.cssText = `
+      top: ${pickup.initialY}px;
+      left: ${this.Game.gameField.width()}px;
+      width: ${pickup.radius}px;
+      height: ${pickup.radius}px;
+      background-color: red;
+      transition: all linear ${pickup.speed}ms;
+    `;
+
+    this._gameElement.append(obj);
+
+    setTimeout(() => {
+      this._moveObject(obj, { x: -pickup.radius, y: pickup.finalY });
+    }, 50);
+
+    obj.ontransitionend = function transitionEnd(this: GameComponent) {
+      if (parseInt(getComputedStyle(obj).left) <= 0) obj.remove();
+    }.bind(this);
+  }
 
   private _renderAsteroid(asteroid: Asteroid) {
     const obj = document.createElement("div");
@@ -126,29 +150,28 @@ export class GameComponent implements OnInit, OnDestroy, AfterViewInit {
       transition-duration: ${this.View.availWidth / asteroid.velocity}s;
     `;
 
-    obj.className = "asteroid";
-    this._gameElement!.append(obj);
+    obj.classList.add("asteroid", "entity");
+    this._gameElement.append(obj);
 
     setTimeout(() => {
-      this._moveAsteroid(obj, asteroid);
-      if (asteroid.rotation) this._rotateAsteroid(obj, asteroid);
-    }, 50);
-  }
+      if (asteroid.rotation) this._rotateObject(obj, asteroid.rotation);
 
-  private _moveAsteroid(obj: HTMLDivElement, asteroid: Asteroid) {
-    obj.style.top = asteroid.finalY + "px";
-    obj.style.left = 0 - asteroid.radius * 2 + "px";
+      this._moveObject(obj, { y: asteroid.finalY, x: -asteroid.radius * 2 });
+    }, 50);
 
     obj.ontransitionend = function transitionEnd(this: GameComponent) {
       if (parseInt(getComputedStyle(obj).left) <= 0) this._removeAsteroid(obj);
     }.bind(this);
   }
 
-  private _rotateAsteroid(obj: HTMLDivElement, asteroid: Asteroid) {
-    obj.style.transform = `rotateZ(${asteroid.rotation!.degrees}deg)`;
-    obj.style.transition = `tranform ${asteroid.rotation?.transitionSpeed} ${
-      TransitionType[asteroid.rotation!.type]
-    }`;
+  private _moveObject(obj: HTMLDivElement, pos: Position) {
+    obj.style.top = pos.y + "px";
+    obj.style.left = pos.x + "px";
+  }
+
+  private _rotateObject(obj: HTMLDivElement, rotation: RotationZ) {
+    obj.style.transform = `rotateZ(${rotation.degrees}deg)`;
+    obj.style.transition = `tranform ${rotation.transitionSpeed} ${rotation.type}`;
   }
 
   private _removeAsteroid(obj: HTMLDivElement) {
@@ -157,13 +180,10 @@ export class GameComponent implements OnInit, OnDestroy, AfterViewInit {
   }
 
   endGame() {
-    this._shipElement.style.top = getComputedStyle(this._shipElement).top;
+    const entities = document.getElementsByClassName("entity");
 
-    const asteroids = document.getElementsByClassName("asteroid");
-
-    let len = asteroids.length;
-    for (let i = 0; i < len; i++) {
-      const obj = <HTMLDivElement>asteroids[i];
+    for (let i = 0; i < entities.length; i++) {
+      const obj = <HTMLDivElement>entities[i];
       const { top, left, transform } = getComputedStyle(obj);
 
       obj.classList.add("no-transition");
@@ -192,6 +212,8 @@ export class GameComponent implements OnInit, OnDestroy, AfterViewInit {
   }
 
   ngOnInit() {
+    const events = this.Game.emitters;
+
     this._keyDown = fromEvent<KeyboardEvent>(window, "keydown").subscribe(
       this.Game.track.keyDown(this)
     );
@@ -200,66 +222,36 @@ export class GameComponent implements OnInit, OnDestroy, AfterViewInit {
       this.Game.track.keyUp(this)
     );
 
-    this.Game.emitters.asteroid.subscribe((asteroid) => {
-      this._renderAsteroid(asteroid);
-    });
+    events.asteroid.subscribe((asteroid) => this._renderAsteroid(asteroid));
+    events.endGame.subscribe((NULL) => this.endGame());
+    events.hitPoints.subscribe((val) => (this.hp = val));
+    events.maxHitPoints.subscribe((val) => (this.maxHp = val));
+    events.pickupGererated.subscribe((item) => this._renderPickup(item));
+    events.shipBlink.subscribe((duration) => this.shipBlink(duration));
 
-    this.Game.emitters.endGame.subscribe((NULL) => {
-      this.endGame();
-    });
-
-    this.Game.emitters.position.subscribe((pos) => {
+    events.position.subscribe((pos) => {
       if (
         pos.x <= this.statusWd.width + this.statusWd.margin &&
         pos.y >=
           this.Game.gameField.height() -
-            (this.statusWd.height +
-              this.statusWd.margin +
-              this.Game.shipRadius * 2)
+            (this.statusWd.height + this.statusWd.margin + this.Game.ship.size)
       )
         this.statusWd.opacity = this.statusWd.transparentOpacity;
       else this.statusWd.opacity = this.statusWd.defaultOpacity;
     });
-
-    this.Game.emitters.shipBlink.subscribe((duration) => {
-      this.shipBlink(duration);
-    });
-
-    this.Game.emitters.hitPoints.subscribe((val) => {
-      this.shipHp = val;
-    });
-
-    this.Game.emitters.maxHitPoints.subscribe((val) => {
-      this.shipMaxHp = val;
-    });
   }
 
   ngAfterViewInit() {
-    this._gameElement = <HTMLDivElement>document.getElementById("game");
-    this._shipElement = <HTMLDivElement>document.getElementById("ship");
-    this._statusWdPos = document
-      .getElementById("status-window")!
-      .getBoundingClientRect();
+    this._gameElement = document.querySelector<HTMLDivElement>("#game")!;
+    this._shipElement = document.querySelector<HTMLDivElement>("#ship")!;
 
-    const { x, y } = this._shipElement.getBoundingClientRect();
+    this.Game.setShipElement(this._shipElement);
+    this.Game.launch(GameDifficulties.get(this.difficulty)!);
 
-    this._shipPosition = { x, y };
-    this._shipRadius = parseInt(getComputedStyle(this._shipElement).height) / 2;
-
-    this.Game.set
-      .ship({
-        element: this._shipElement,
-        pos: this._shipPosition,
-        speed: this.View.availHeight / 25,
-      })
-      .asteroidRadius(40)
-      .asteroidSpeed(450, 50)
-      .shipPosition({
-        x: 150,
-        y: this.View.availHeight / 2 - this._shipRadius,
-      });
-
-    this.Game.launch();
+    setTimeout(() => {
+      this.hp = this.Game.ship.hp;
+      this.maxHp = this.Game.ship.maxHp;
+    });
   }
 
   ngOnDestroy() {
