@@ -48,6 +48,8 @@ export class GameComponent implements OnInit, OnDestroy, AfterViewInit {
   private _statusWdPos!: DOMRect;
   private _shipImtCd = 250;
   private _shipImtSwpTmp!: number;
+  private _asteroidObject!: HTMLDivElement;
+  private _pickupObject!: HTMLDivElement;
 
   statusWd = {
     width: 300,
@@ -71,6 +73,17 @@ export class GameComponent implements OnInit, OnDestroy, AfterViewInit {
 
   constructor(private View: ViewComputingService, public Game: GameService) {
     this.height = View.availHeight + "px";
+
+    this._asteroidObject = document.createElement("div");
+    this._asteroidObject.classList.add("entity", "asteroid");
+
+    this._pickupObject = document.createElement("div");
+    this._pickupObject.classList.add("entity", "pickup");
+
+    if (GameService.GAME_MODE === "debug") {
+      this._asteroidObject.classList.add("debug");
+      this._pickupObject.classList.add("debug");
+    }
   }
 
   private readonly _events = {
@@ -114,9 +127,9 @@ export class GameComponent implements OnInit, OnDestroy, AfterViewInit {
   };
 
   private _renderPickup(pickup: PickupItem) {
-    const obj = document.createElement("div");
+    const obj = <HTMLDivElement>this._pickupObject.cloneNode();
 
-    obj.classList.add("pickup", "entity", pickup.type);
+    obj.classList.add(pickup.type);
 
     obj.style.cssText = `
       top: ${pickup.initialY}px;
@@ -139,7 +152,7 @@ export class GameComponent implements OnInit, OnDestroy, AfterViewInit {
   }
 
   private _renderAsteroid(asteroid: Asteroid) {
-    const obj = document.createElement("div");
+    const obj = <HTMLDivElement>this._asteroidObject.cloneNode();
 
     obj.style.cssText = `
       top: ${asteroid.initialY}px;
@@ -150,7 +163,6 @@ export class GameComponent implements OnInit, OnDestroy, AfterViewInit {
       transition-duration: ${this.View.availWidth / asteroid.velocity}s;
     `;
 
-    obj.classList.add("asteroid", "entity");
     this._gameElement.append(obj);
 
     setTimeout(() => {

@@ -17,21 +17,18 @@ export class ViewComputingService {
 
   /** Distance in px between centerf of a and center of b */
   distanceBetween(
-    elem1: HTMLElement | Element | HTMLDivElement,
-    elem2: HTMLElement | Element | HTMLDivElement
+    elem1: HTMLElement | HTMLDivElement,
+    elem2: HTMLElement | HTMLDivElement
   ): number {
-    const a = elem1 as HTMLDivElement;
-    const b = elem2 as HTMLDivElement;
-    const a_center = parseFloat(a.style.width) / 2,
-      b_center = parseFloat((b as any).style.width) / 2;
+    const a = elem1;
+    const b = elem2;
+
+    const a_center = a.offsetWidth / 2,
+      b_center = b.offsetWidth / 2;
 
     return Math.hypot(
-      a.getBoundingClientRect().top +
-        a_center -
-        (b!.getBoundingClientRect().top + b_center),
-      a.getBoundingClientRect().left +
-        a_center -
-        (b!.getBoundingClientRect().left + b_center)
+      a.offsetTop + a_center - (b.offsetTop + b_center),
+      a.offsetLeft + a_center - (b.offsetLeft + b_center)
     );
   }
 

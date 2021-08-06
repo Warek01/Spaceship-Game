@@ -10,6 +10,8 @@ import {
 } from "../classes/Errors";
 import { and, equals, or, strToBool } from "../global";
 
+import $ from "jquery";
+
 import {
   Difficulty,
   GameDifficulties,
@@ -109,12 +111,11 @@ export class GameService {
       defaultShipTexture: 0,
       defaultBg: 0,
       defaultPosition: {
-        x: 150,
+        x: 50,
         y: 300,
       },
       defaultSize: 50,
     },
-    pickupGenerationInterval: 1000,
     endGameDelay: 3000,
     isEndGameDelay: true,
     gameMode: GameService.GAME_MODE,
@@ -241,10 +242,10 @@ export class GameService {
 
   gameField: Size = {
     width() {
-      return parseInt(getComputedStyle(document.body).width);
+      return document.body.offsetWidth;
     },
     height() {
-      return parseInt(getComputedStyle(document.body).height);
+      return document.body.offsetHeight;
     },
   };
 
@@ -254,11 +255,18 @@ export class GameService {
     this.movingVector = V.up;
 
     const { y } = this.ship.pos;
-    const endY = 0;
-    const seconds = (this._SHIP_Y_SPD * y) / this.gameField.height();
-
-    this.ship.element.style.transition = `all linear ${seconds}s`;
-    this.ship.element.style.top = endY + "px";
+    $(this.ship.element)
+      .animate(
+        {
+          top: "0px",
+        },
+        {
+          easing: "linear",
+          duration: ((this._SHIP_Y_SPD * y) / this.gameField.height()) * 1000,
+          queue: "up",
+        }
+      )
+      .dequeue("up");
   }
 
   shipMoveLeft() {
@@ -266,12 +274,18 @@ export class GameService {
     this.movingVector = V.left;
 
     const { x } = this.ship.pos;
-    const endX = 0;
-
-    const seconds = (this._SHIP_X_SPD * x) / this.gameField.width();
-
-    this.ship.element.style.transition = `all linear ${seconds}s`;
-    this.ship.element.style.left = endX + "px";
+    $(this.ship.element)
+      .animate(
+        {
+          left: "0px",
+        },
+        {
+          easing: "linear",
+          duration: ((this._SHIP_X_SPD * x) / this.gameField.width()) * 1000,
+          queue: "left",
+        }
+      )
+      .dequeue("left");
   }
 
   shipMoveRight() {
@@ -279,12 +293,22 @@ export class GameService {
     this.movingVector = V.right;
 
     const { x } = this.ship.pos;
-    const endX = this.gameField.width() - this.shipRadius * 2;
 
-    const seconds = (this._SHIP_X_SPD * (this.gameField.width() - x)) / endX;
-
-    this.ship.element.style.transition = `all linear ${seconds}s`;
-    this.ship.element.style.left = endX + "px";
+    $(this.ship.element)
+      .animate(
+        {
+          left: this.gameField.width() - this.shipRadius + "px",
+        },
+        {
+          easing: "linear",
+          duration:
+            ((this._SHIP_X_SPD * (this.gameField.width() - x)) /
+              (this.gameField.width() - this.shipRadius * 2)) *
+            1000,
+          queue: "right",
+        }
+      )
+      .dequeue("right");
   }
 
   shipMoveDown() {
@@ -292,12 +316,22 @@ export class GameService {
     this.movingVector = V.down;
 
     const { y } = this.ship.pos;
-    const endY = this.gameField.height() - this.shipRadius * 2;
 
-    const seconds = (this._SHIP_Y_SPD * (this.gameField.height() - y)) / endY;
-
-    this.ship.element.style.transition = `all linear ${seconds}s`;
-    this.ship.element.style.top = endY + "px";
+    $(this.ship.element)
+      .animate(
+        {
+          top: this.gameField.height() - this.shipRadius + "px",
+        },
+        {
+          easing: "linear",
+          duration:
+            ((this._SHIP_Y_SPD * this.gameField.height() - y) /
+              (this.gameField.height() - this.shipRadius * 2)) *
+            1000,
+          queue: "down",
+        }
+      )
+      .dequeue("down");
   }
 
   /** Listeners (event trackers) */
@@ -332,18 +366,19 @@ export class GameService {
           this.Game.ship
         ) {
           const ship = self.ship!;
+
           if (equals(key, ["d", "arrowright"])) {
             self.movingVector = V.none;
-            ship.element.style.left = getComputedStyle(ship.element).left;
+            $(ship.element).stop("right");
           } else if (equals(key, ["a", "arrowleft"])) {
             self.movingVector = V.none;
-            ship.element.style.left = getComputedStyle(ship.element).left;
+            $(ship.element).stop("left");
           } else if (equals(key, ["w", "arrowup"])) {
             self.movingVector = V.none;
-            ship.element.style.top = getComputedStyle(ship.element).top;
+            $(ship.element).stop("up");
           } else if (equals(key, ["s", "arrowdown"])) {
             self.movingVector = V.none;
-            ship.element.style.top = getComputedStyle(ship.element).top;
+            $(ship.element).stop("down");
           }
         }
       }.bind(component);
@@ -491,7 +526,7 @@ export class GameService {
 
   /** When ship collides into asteroid */
   private _shipCollision(pos: Position) {
-    const ship = this.ship!;
+    const ship = this.ship;
 
     ship.hp--;
     ship.immune = true;
@@ -542,6 +577,7 @@ export class GameService {
 
   launch(difficulty?: GameDifficultyConfig) {
     if (this._isStopped) throw new GameLauchError("Game is stopped");
+    if (!difficulty) difficulty = GameDifficulties.get(this.difficulty)!;
 
     GameService.clearIntervals(this._intervals);
     this._changeGameState(GameState.InGame);
@@ -553,83 +589,71 @@ export class GameService {
 
     const CONF = GameService.config;
 
-    if (difficulty)
-      this.ship = {
-        element: this._shipElement,
-        hp: difficulty.hp.initial,
-        maxHp: difficulty.hp.max,
-        ammo: difficulty.ammo.initial,
-        maxAmmo: difficulty.ammo.max,
-        immune: CONF.ship.immune,
-        size: CONF.ship.defaultSize,
-        pos: {
-          x: GameService.config.ship.defaultPosition.x,
-          y: this.View.availHeight / 2 - this._R,
-        },
-      };
-    else {
-      const local = GameDifficulties.get(this.difficulty)!;
-
-      this.ship = {
-        element: this._shipElement,
-        hp: local.hp.initial,
-        maxHp: local.hp.max,
-        ammo: local.ammo.initial,
-        maxAmmo: local.ammo.max,
-        immune: CONF.ship.immune,
-        size: CONF.ship.defaultSize,
-        pos: {
-          x: GameService.config.ship.defaultPosition.x,
-          y: this.View.availHeight / 2 - this._R,
-        },
-      };
-    }
+    this.ship = {
+      element: this._shipElement,
+      hp: difficulty.hp.initial,
+      maxHp: difficulty.hp.max,
+      ammo: difficulty.ammo.initial,
+      maxAmmo: difficulty.ammo.max,
+      immune: CONF.ship.immune,
+      size: CONF.ship.defaultSize,
+      pos: {
+        x: GameService.config.ship.defaultPosition.x,
+        y: this.View.availHeight / 2 - this._R,
+      },
+    };
 
     const s = this.ship;
 
-    s.element.style.width = this.ship.size + "px";
-    s.element.style.height = this.ship.size + "px";
-    this._R = this.ship.size;
+    if (GameService.GAME_MODE === "debug") {
+      s.element.style.outline = "1px solid #81ecec";
+      s.element.style.border = "1px solid #4cd137";
+    }
 
-    s.element.querySelector<HTMLDivElement>(
-      ".texture"
-    )!.style.backgroundImage = `url(${this.shipTexture})`;
+    this._R = this.ship.size / 2;
+    $(s.element)
+      .css({
+        width: this.ship.size,
+        height: this.ship.size,
+        left: this.ship.pos.x,
+        top: this.ship.pos.y,
+      })
+      .find(".texture")
+      .css("background-image", `url(${this.shipTexture})`);
 
     // Asteroid generation
-    this._intervals.asteroid = setInterval(
-      () => {
-        this.emitters.asteroid.emit(this._generateAsteroid());
-      },
-      difficulty
-        ? difficulty.asteroidGenRate
-        : GameDifficulties.get(this.difficulty)!.asteroidGenRate
-    );
+    this._intervals.asteroid = setInterval(() => {
+      this.emitters.asteroid.emit(this._generateAsteroid());
+    }, difficulty.asteroidGenRate);
 
     // X - Y position tracking for all entities
     this._intervals.positionTrack = setInterval(() => {
       const entities = document.getElementsByClassName("entity");
 
-      for (let i = 0; i < entities.length; i++) {
+      const len = entities.length;
+      for (let i = 0; i < len; i++) {
+        const entity = <HTMLDivElement>entities[i];
+
         if (entities[i].id === "ship") {
           // Update ship position
-          const { x, y } = entities[i].getBoundingClientRect();
-          s.pos.x = Math.round(x);
-          s.pos.y = Math.round(y);
-        } else if (entities[i].classList.contains("asteroid")) {
+          s.pos.x = entity.offsetLeft;
+          s.pos.y = entity.offsetTop;
+        } else if (entity.classList.contains("asteroid")) {
           // Check for asteroid collision
           if (
             and(
               !this.ship.immune,
               !this._isStopped,
-              this._r + this._R >
-                this.View.distanceBetween(entities[i], this.ship.element)
+              entity.offsetWidth / 2 + this.ship.element.offsetWidth / 2 >
+                this.View.distanceBetween(entity, this.ship.element)
             )
-          )
+          ) {
             this._shipCollision({
               y: this.ship!.pos.y - this._R / 2,
               x: this.ship!.pos.x - this._R / 2,
             });
-        } else if (entities[i].classList.contains("pickup")) {
+          }
+        } else if (entity.classList.contains("pickup")) {
         }
       }
 
@@ -658,7 +682,7 @@ export class GameService {
     this._intervals.pickupGeneration = setInterval(() => {
       const item = this._generatePickup();
       this.emitters.pickupGererated.emit(item);
-    }, CONF.pickupGenerationInterval);
+    }, difficulty?.itemGenRate);
   }
 
   /** Stop all entities and nav to end screen
@@ -671,11 +695,7 @@ export class GameService {
     this.emitters.endGame.emit(null);
     GameService.clearIntervals(this._intervals);
 
-    const shipElement = this.ship!.element;
-    const { x, y } = this.ship!.pos;
-    shipElement.style.top = y + "px";
-    shipElement.style.left = x + "px";
-
+    $(this.ship.element).stop();
     this._isStopped = true;
 
     if (timeout) setTimeout(() => this._stop(), timeout);
@@ -846,6 +866,8 @@ export class GameService {
     GameService.config.sound.masterVolume = value;
     GameService.save("volume", value);
   }
+
+  isDebug = GameService.GAME_MODE === "debug";
 }
 
 export type GameBuildState = "debug" | "release";
@@ -954,7 +976,6 @@ export interface GameConfigObject {
   endGameDelay: number;
   gameMode: GameBuildState;
   popupFade: number;
-  pickupGenerationInterval: number;
   sound: {
     masterVolume: number;
     initialVoulmeActive: boolean;

@@ -2,8 +2,7 @@
 @use "scss/defaults" as def;
 @use "scss/mixins" as mix;
 
-@forward "scss/items";
-@forward "scss/ship";
+@forward "scss/entities";
 
 :root {
   font-size: 16px;

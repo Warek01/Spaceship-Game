@@ -13,8 +13,8 @@ export const GameDifficulties: Map<Difficulty, GameDifficultyConfig> = new Map([
     D.Test,
     {
       hp: {
-        initial: 1,
-        max: 1,
+        initial: 3,
+        max: 5,
         maxAllowed: 10,
       },
       ammo: {
