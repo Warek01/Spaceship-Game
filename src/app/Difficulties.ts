@@ -1,9 +1,9 @@
 export enum Difficulty {
-  Test = 1,
-  Easy = 2.5,
-  Medium = 5, // -default
-  Hard = 7,
-  Challenging = 9,
+  Test,
+  Easy,
+  Medium, // -default
+  Hard,
+  Challenging,
 }
 
 const D = Difficulty;

@@ -29,6 +29,8 @@ export class SettingsWindowComponent implements OnInit {
 
     if (this.soundIsActive) this.animateRange(0, this.defaultVolume);
     else this.animateRange(this.defaultVolume, 0);
+
+    GameService.save("sound-is-active", this.soundIsActive);
   }
 
   animateRange(from: number, to: number) {
@@ -44,6 +46,8 @@ export class SettingsWindowComponent implements OnInit {
       if (from < to) this.volume = current++;
       else if (from > to) this.volume = current--;
     }, interval);
+
+    GameService.save("volume", to);
   }
 
   changeVolume(value: number) {

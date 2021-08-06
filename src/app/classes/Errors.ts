@@ -11,17 +11,21 @@ abstract class CustomError extends Error {
 }
 
 export class SoundNotFoundError extends CustomError {
-  name = "Sound Not Found Error";
+  name = "Sound-Not-Found-Error";
 }
 
 export class BackgroondNotFoundError extends CustomError {
-  name = "Background Not Found Error";
+  name = "Background-Not-Found-Error";
 }
 
 export class GameLauchError extends CustomError {
-  name = "Game Launch Error";
+  name = "Game-Launch-Error";
 }
 
 export class ParameterError extends CustomError {
-  name = "Parameter error";
+  name = "Parameter-Error";
+}
+
+export class EnvironmentError extends CustomError {
+  name = "Environment-Error"
 }

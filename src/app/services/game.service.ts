@@ -3,8 +3,12 @@ import { Router } from "@angular/router";
 import { ViewComputingService } from "./viewComputing.service";
 import { GameComponent } from "../game/game.component";
 import { GameSound, SoundId } from "../game-audio/game-audio.component";
-import { GameLauchError, ParameterError } from "../classes/Errors";
-import { and, equals } from "../global";
+import {
+  EnvironmentError,
+  GameLauchError,
+  ParameterError,
+} from "../classes/Errors";
+import { and, equals, or, strToBool } from "../global";
 
 import {
   Difficulty,
@@ -43,6 +47,15 @@ export enum MovingDirection {
 }
 
 const V = MovingDirection;
+
+const GAME_SAVE_KEYS = new Map<string, TypeConvertor>([
+  ["best-score", Number],
+  ["volume", Number],
+  ["sound-is-active", strToBool],
+  ["ship", Number],
+  ["background", Number],
+  ["difficulty", Number],
+]);
 
 export const texturesContainer: GameTexturesContainer = {
   bg: [
@@ -91,7 +104,7 @@ export class GameService {
   // Game configuration object
   static readonly config: GameConfigObject = {
     ship: {
-      immune: true,
+      immune: false,
       immuneTime: 2000,
       defaultShipTexture: 0,
       defaultBg: 0,
@@ -107,7 +120,7 @@ export class GameService {
     gameMode: GameService.GAME_MODE,
     popupFade: 300,
     sound: {
-      initialVoulmeActive: false,
+      initialVoulmeActive: true,
       initialVolumeValue: 50,
       masterVolume: 0, // Equals to initial volume in constructor
     },
@@ -128,7 +141,6 @@ export class GameService {
   };
 
   private _currentScore = 0;
-  private _bestScore = 0;
   /** (ms) */
   private _scoreRate = 100;
   /** If game is stopped */
@@ -225,6 +237,7 @@ export class GameService {
 
   /** Name of current key held by user */
   movingVector: MovingDirection = V.none;
+  bestScore = 0;
 
   gameField: Size = {
     width() {
@@ -352,6 +365,7 @@ export class GameService {
 
     this.emitters.setDifficulty.subscribe((diff) => {
       this.difficulty = diff;
+      GameService.save("difficulty", diff);
     });
 
     this.emitters.setBgTexture.subscribe((index) => {
@@ -366,6 +380,7 @@ export class GameService {
       this.emitters.currentScore.emit(0);
       this.emitters.setBgTexture.emit(0);
       this.enableSound();
+      this.setVolume(GameService.config.sound.initialVolumeValue);
     });
 
     this.emitters.itemPicked.subscribe((item) => {
@@ -376,15 +391,17 @@ export class GameService {
       GameService.config.sound.initialVolumeValue;
 
     if (!GameService.config.sound.initialVoulmeActive) this.disableSound();
+
+    this._loadSavedGameData();
   }
 
-  static clearIntervals = function (intervalsObject: any) {
+  static clearIntervals(intervalsObject: any) {
     for (const key of Object.keys(intervalsObject)) {
       if (!intervalsObject[key]) continue;
       clearInterval(intervalsObject[key]);
       intervalsObject[key] = null;
     }
-  };
+  }
 
   private _changeGameState(state: GameState) {
     this.emitters.currentGameState.emit(state);
@@ -453,12 +470,12 @@ export class GameService {
 
   /** Completely stop & move to end screen */
   private _stop() {
-    if (this._currentScore > this._bestScore) {
-      this._bestScore = this._currentScore;
+    if (this._currentScore > this.bestScore) {
+      this.bestScore = this._currentScore;
       this._currentScore = 0;
       this._isStopped = false;
 
-      this.emitters.bestScore.emit(this._bestScore);
+      this.emitters.bestScore.emit(this.bestScore);
     }
     this._autosave();
 
@@ -634,7 +651,7 @@ export class GameService {
           if (asteroids[i] && asteroids[i].getBoundingClientRect().left <= 0)
             asteroids[i].remove();
       } catch (err: unknown) {
-        console.log("Asteroid error: ", err);
+        console.warn("Asteroid error: ", err);
       }
     }, 1000);
 
@@ -681,13 +698,66 @@ export class GameService {
   continue() {}
 
   /** Save data to LocalStorage */
-  save(score: number) {
-    localStorage.removeItem("best-score");
-    localStorage.setItem("best-score", score.toString());
+  private _saveScore(score: number) {
+    GameService.save("best-score", score);
   }
 
   private _autosave() {
-    this.save(this._bestScore);
+    this._saveScore(this.bestScore);
+  }
+
+  static save(data: string | any, value?: any) {
+    if (!window.localStorage)
+      throw new EnvironmentError("Missing localStorage object");
+
+    const storage = window.localStorage;
+
+    // debugger
+    if (typeof data === "object" && !value)
+      for (const [key, value] of Object.entries(data))
+        storage.setItem(key, String(value));
+    else if (typeof data === "string") storage.setItem(data, String(value));
+    else throw new ParameterError("Wrong parameters", data, value);
+  }
+
+  private _loadSavedGameData() {
+    if (!window.localStorage)
+      throw new EnvironmentError("Missing localStorage object");
+
+    const storage = window.localStorage;
+
+    for (const [key, conversionObject] of GAME_SAVE_KEYS.entries()) {
+      const raw = storage.getItem(key);
+
+      if (raw) {
+        const parsed = conversionObject(raw);
+
+        switch (key) {
+          case "best-score":
+            this.emitters.bestScore.emit(parsed);
+            this.bestScore = parsed;
+            break;
+          case "sound-is-active":
+            parsed ? this.enableSound() : this.disableSound();
+            break;
+          case "volume":
+            this.setVolume(parsed);
+            break;
+          case "difficulty":
+            this.emitters.setDifficulty.emit(parsed);
+            break;
+        }
+      }
+    }
+  }
+
+  loadSavedData(key: string) {
+    if (!window.localStorage)
+      throw new EnvironmentError("Missing localStorage object");
+
+    const storage = window.localStorage;
+
+    return storage.getItem(key);
   }
 
   setShipElement(element: HTMLDivElement) {
@@ -774,6 +844,7 @@ export class GameService {
     else if (value > 100) value = 100;
 
     GameService.config.sound.masterVolume = value;
+    GameService.save("volume", value);
   }
 }
 
@@ -867,6 +938,8 @@ export interface PopupWindow {
 
 export type Timer = any;
 export type Interval = any;
+
+export type TypeConvertor = any;
 
 export interface GameConfigObject {
   ship: {

@@ -10,8 +10,8 @@
       Score: <br> {{currentScore}}
     </span>
 
-    <span class="best-score" *ngIf="bestScore && bestScore !== 0">
-      Best score: <br> {{bestScore}}
+    <span class="best-score" *ngIf="Game.bestScore && Game.bestScore !== 0">
+      Best score: <br> {{Game.bestScore}}
     </span>
 
     <span class="best-score-alert" *ngIf="isBestScore && bestScore > 0">
