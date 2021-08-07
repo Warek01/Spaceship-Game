@@ -18,7 +18,7 @@
       new best!
     </span>
 
-      <span class="debug" *ngIf="Game.isDebug">Debug</span>
+      <span class="debug" *ngIf="Game.isDebug()">Debug</span>
   </div>
   
   
@@ -43,7 +43,10 @@
         </button>
       </ng-template>
 
-      <button (click)="Game.toggleFullscreen()">
+      <button 
+        *ngIf="View.availWidth > 1000"
+        (click)="Game.toggleFullscreen()"
+      >
         fullscreen
       </button>
       <button (click)="goToMenu()" *ngIf="currentGameState === GameState.EndScreen">

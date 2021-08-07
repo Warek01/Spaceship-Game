@@ -8,7 +8,17 @@ import {
   GameLauchError,
   ParameterError,
 } from "../classes/Errors";
-import { and, equals, or, strToBool } from "../global";
+import {
+  and,
+  equals,
+  genRandomFloat,
+  genRandomInt,
+  or,
+  strToBool,
+  pickRandom,
+  generateChance,
+  getFromMapChance,
+} from "../global";
 
 import $ from "jquery";
 
@@ -21,8 +31,11 @@ export { Difficulty, GameDifficulties, GameDifficultyConfig };
 
 export enum PickupItemId {
   Hp,
+  MaxHp,
   XpBoost,
   Immunity,
+  Ammo,
+  MaxAmmo,
   _LENGTH,
 }
 
@@ -50,13 +63,14 @@ export enum MovingDirection {
 
 const V = MovingDirection;
 
-const GAME_SAVE_KEYS = new Map<string, TypeConvertor>([
+const GAME_SAVE_KEYS = new Map<string, StringConvertor>([
   ["best-score", Number],
   ["volume", Number],
   ["sound-is-active", strToBool],
   ["ship", Number],
   ["background", Number],
   ["difficulty", Number],
+  ["debug-mode", strToBool],
 ]);
 
 export const texturesContainer: GameTexturesContainer = {
@@ -95,13 +109,21 @@ export const texturesContainer: GameTexturesContainer = {
     "asteroid_9.png",
     "asteroid_10.png",
   ],
+  pickups: new Map<PickupItemType, string>([
+    ["Hp", "pill.png"],
+    ["Immunity", "slienld.png"],
+    ["Ammo", "bullet.png"],
+    ["XpBoost", "plus.png"],
+    ["MaxAmmo", "ammo.png"],
+    ["MaxHp", "heart.png"],
+  ]),
 };
 
 @Injectable({
   providedIn: "root",
 })
 export class GameService {
-  static GAME_MODE: GameBuildState = "debug";
+  static GAME_MODE: GameBuildState = "release";
 
   // Game configuration object
   static readonly config: GameConfigObject = {
@@ -115,6 +137,7 @@ export class GameService {
         y: 300,
       },
       defaultSize: 50,
+      pickupRadius: 100,
     },
     endGameDelay: 3000,
     isEndGameDelay: true,
@@ -131,12 +154,6 @@ export class GameService {
   private readonly _intervals: IntervalsObject = {
     score: null,
     asteroid: null,
-    asteroidClear: null,
-    distance: null,
-    moveUp: null,
-    moveDown: null,
-    moveLeft: null,
-    moveRight: null,
     positionTrack: null,
     pickupGeneration: null,
   };
@@ -177,6 +194,7 @@ export class GameService {
 
   ship!: Ship;
   difficulty: Difficulty = Difficulty.Medium;
+  difficultyData: GameDifficultyConfig = GameDifficulties.get(this.difficulty)!;
   isSoundDisabled = false;
   itemsPicked = 0;
   /** Images base URL */
@@ -200,8 +218,10 @@ export class GameService {
     bestScore: new EventEmitter<number>(),
     /** Fires when gamestate changes */
     currentGameState: new EventEmitter<GameState>(),
-    setDifficulty: new EventEmitter<Difficulty>(),
+    difficultyChange: new EventEmitter<Difficulty>(),
     setBgTexture: new EventEmitter<number>(),
+    ammo: new EventEmitter<number>(),
+    maxAmmo: new EventEmitter<number>(),
     /** Fires when a new asteroid is generated */
     asteroid: new EventEmitter<Asteroid>(),
     /** Count an asteroid */
@@ -232,7 +252,7 @@ export class GameService {
     popup: new EventEmitter<PopupWindow>(),
     /** Fires when sound is being enabled/disabled */
     sound: new EventEmitter<boolean>(),
-    itemPicked: new EventEmitter<PickupItem>(),
+    itemPicked: new EventEmitter<null>(),
     pickupGererated: new EventEmitter<PickupItem>(),
   };
 
@@ -297,7 +317,7 @@ export class GameService {
     $(this.ship.element)
       .animate(
         {
-          left: this.gameField.width() - this.shipRadius + "px",
+          left: this.gameField.width() - this.ship.size + "px",
         },
         {
           easing: "linear",
@@ -320,7 +340,7 @@ export class GameService {
     $(this.ship.element)
       .animate(
         {
-          top: this.gameField.height() - this.shipRadius + "px",
+          top: this.gameField.height() - this.ship.size * 2 + "px",
         },
         {
           easing: "linear",
@@ -365,7 +385,7 @@ export class GameService {
           this.Game._currentGameState === GameState.InGame &&
           this.Game.ship
         ) {
-          const ship = self.ship!;
+          const ship = self.ship;
 
           if (equals(key, ["d", "arrowright"])) {
             self.movingVector = V.none;
@@ -398,9 +418,10 @@ export class GameService {
       this._removedAsteroids++;
     });
 
-    this.emitters.setDifficulty.subscribe((diff) => {
+    this.emitters.difficultyChange.subscribe((diff) => {
       this.difficulty = diff;
-      GameService.save("difficulty", diff);
+      this.difficultyData = GameDifficulties.get(diff)!;
+      this.save("difficulty", diff);
     });
 
     this.emitters.setBgTexture.subscribe((index) => {
@@ -418,7 +439,9 @@ export class GameService {
       this.setVolume(GameService.config.sound.initialVolumeValue);
     });
 
-    this.emitters.itemPicked.subscribe((item) => {
+    this.emitters.difficultyChange;
+
+    this.emitters.itemPicked.subscribe((NULL) => {
       this.itemsPicked++;
     });
 
@@ -448,12 +471,14 @@ export class GameService {
   }
 
   private _generatePickup(): PickupItem {
-    const itemId = PickupItemId[this.genRandomInt(0, PickupItemId._LENGTH - 1)];
+    const diff = this.difficultyData;
+
+    const itemType = getFromMapChance(diff.pickup.chances);
 
     const item: PickupItem = {
-      type: itemId,
-      initialY: this.genRandomInt(-100, this.gameField.height() + 100),
-      finalY: this.genRandomInt(-100, this.gameField.height() + 100),
+      type: itemType,
+      initialY: genRandomInt(-100, this.gameField.height() + 100),
+      finalY: genRandomInt(-100, this.gameField.height() + 100),
       radius: 30,
       texture: "",
       speed: 2000,
@@ -462,43 +487,25 @@ export class GameService {
     return item;
   }
 
-  genRandomInt(from: number, to: number): number {
-    return Math.round(this.genRandomFloat(from, to));
-  }
-
-  genRandomFloat(from: number, to: number): number {
-    return Math.random() * (to - from) + from;
-  }
-
-  /** Generate a chance and test it */
-  generateChance(chance: number): boolean {
-    if (chance <= 100 && chance >= 0) {
-      return Math.random() <= chance / 100;
-    } else throw new ParameterError(chance.toString());
-  }
-
   private _generateAsteroid(): Asteroid {
-    const rotation: RotationZ | null = this.generateChance(75) // 75% chance
+    const rotation: RotationZ | null = generateChance(75) // 75% chance
       ? {
-          degrees: this.genRandomInt(0, 1000),
-          transitionSpeed: this.genRandomInt(1000, 6000),
-          type: this.genRandomInt(0, 4),
+          degrees: genRandomInt(0, 1000),
+          transitionSpeed: genRandomInt(1000, 6000),
+          type: genRandomInt(0, 4),
         }
       : null;
 
     return {
-      texture: `asteroid_${this.genRandomInt(1, 10)}.png`,
+      texture: `asteroid_${genRandomInt(1, 10)}.png`,
       /** Render height (right offscreen) */
-      initialY: this.genRandomFloat(
-        -100,
-        this.View.availHeight + 100 + this._r
-      ),
+      initialY: genRandomFloat(-100, this.View.availHeight + 100 + this._r),
       /** End height (left offscreen) */
-      finalY: this.genRandomFloat(-100, this.View.availHeight + 100 + this._r),
+      finalY: genRandomFloat(-100, this.View.availHeight + 100 + this._r),
       /** Radius from _r to _r + random(0 to _spread) px */
-      radius: this.genRandomFloat(this._r, this._r + this._r_spread),
+      radius: genRandomFloat(this._r, this._r + this._r_spread),
       /** px/s  450 - 550*/
-      velocity: this.genRandomFloat(this._s, this._s_spread + this._s),
+      velocity: genRandomFloat(this._s, this._s_spread + this._s),
       rotation,
     };
   }
@@ -517,10 +524,8 @@ export class GameService {
     this._scoreRate = 100;
     this._currentScore = 0;
     this._gameEndTimestamp = Date.now();
-    // this.ship!.hp = GameService.config.ship.defaultHp;
-    // this.ship!.maxHp = GameService.config.ship.defaultMaxHp;
 
-    this._endSound && this.playSound("break");
+    this._endSound && this.playSound(pickRandom<SoundId>("end-1", "end-2"));
     this.navTo(GameState.EndScreen);
   }
 
@@ -583,7 +588,10 @@ export class GameService {
     this._changeGameState(GameState.InGame);
 
     this._isStopped = false;
+    this.itemsPicked = 0;
+    this._totalAsteroids = 0;
     this._gameStartTimestamp = Date.now();
+    this._gameEndTimestamp = 0;
 
     this.playSound("launch");
 
@@ -634,26 +642,38 @@ export class GameService {
       for (let i = 0; i < len; i++) {
         const entity = <HTMLDivElement>entities[i];
 
-        if (entities[i].id === "ship") {
+        if (entity && entity.id === "ship") {
           // Update ship position
           s.pos.x = entity.offsetLeft;
           s.pos.y = entity.offsetTop;
-        } else if (entity.classList.contains("asteroid")) {
+        } else if (entity && entity.classList.contains("asteroid")) {
           // Check for asteroid collision
           if (
             and(
               !this.ship.immune,
               !this._isStopped,
+              entity,
               entity.offsetWidth / 2 + this.ship.element.offsetWidth / 2 >
                 this.View.distanceBetween(entity, this.ship.element)
             )
-          ) {
+          )
             this._shipCollision({
-              y: this.ship!.pos.y - this._R / 2,
-              x: this.ship!.pos.x - this._R / 2,
+              y: this.ship.pos.y,
+              x: this.ship.pos.x,
             });
+          else if (and(!this._isStopped, entity, entity.offsetLeft <= 0)) {
+            entity.remove();
           }
-        } else if (entity.classList.contains("pickup")) {
+        } else if (entity && entity.classList.contains("pickup")) {
+          if (
+            and(
+              !this._isStopped,
+              entity,
+              entity.offsetWidth / 2 + CONF.ship.pickupRadius >
+                this.View.distanceBetween(entity, this.ship.element)
+            )
+          )
+            this._pickupItem(entity);
         }
       }
 
@@ -666,23 +686,10 @@ export class GameService {
       if (this._currentScore % 100 === 0) this.playSound("notification");
     }, this._scoreRate);
 
-    this._intervals.asteroidClear = setInterval(() => {
-      try {
-        const asteroids = document.getElementsByClassName("asteroid");
-
-        const len = asteroids.length;
-        for (let i = 0; i < len; i++)
-          if (asteroids[i] && asteroids[i].getBoundingClientRect().left <= 0)
-            asteroids[i].remove();
-      } catch (err: unknown) {
-        console.warn("Asteroid error: ", err);
-      }
-    }, 1000);
-
     this._intervals.pickupGeneration = setInterval(() => {
       const item = this._generatePickup();
       this.emitters.pickupGererated.emit(item);
-    }, difficulty?.itemGenRate);
+    }, difficulty.pickup.genRate);
   }
 
   /** Stop all entities and nav to end screen
@@ -719,20 +726,19 @@ export class GameService {
 
   /** Save data to LocalStorage */
   private _saveScore(score: number) {
-    GameService.save("best-score", score);
+    this.save("best-score", score);
   }
 
   private _autosave() {
     this._saveScore(this.bestScore);
   }
 
-  static save(data: string | any, value?: any) {
+  save(data: string | any, value?: any) {
     if (!window.localStorage)
       throw new EnvironmentError("Missing localStorage object");
 
     const storage = window.localStorage;
 
-    // debugger
     if (typeof data === "object" && !value)
       for (const [key, value] of Object.entries(data))
         storage.setItem(key, String(value));
@@ -764,7 +770,10 @@ export class GameService {
             this.setVolume(parsed);
             break;
           case "difficulty":
-            this.emitters.setDifficulty.emit(parsed);
+            this.emitters.difficultyChange.emit(parsed);
+            break;
+          case "debug-mode":
+            GameService.GAME_MODE = parsed ? "debug" : "release";
             break;
         }
       }
@@ -791,6 +800,28 @@ export class GameService {
     this.shipTexture = this.getTextureUrl(texturesContainer.ship[index]);
   }
 
+  private _pickupItem(item: HTMLDivElement) {
+    const type = <PickupItemType>item.dataset.type;
+    item.remove();
+
+    this.emitters.itemPicked.emit();
+    this.playSound(pickRandom<SoundId>("item-pick-1", "item-pick-2"));
+
+    const ship = this.ship;
+    const diff = this.difficultyData;
+
+    // console.log(type);
+    switch (type) {
+      case "Hp":
+        if (ship.hp < ship.maxHp) this.emitters.hitPoints.emit(++ship.hp);
+        break;
+      case "MaxHp":
+        if (ship.maxHp < diff.hp.maxAllowed)
+          this.emitters.maxHitPoints.emit(++ship.maxHp);
+        break;
+    }
+  }
+
   /** Navigate to game state */
   navTo(state: GameState) {
     if (this._currentGameState !== state) {
@@ -807,6 +838,13 @@ export class GameService {
           break;
       }
     }
+  }
+
+  reload(force = false) {
+    if (!location) throw new EnvironmentError(location);
+
+    if (!force) this._autosave();
+    setTimeout(location.reload);
   }
 
   shoot(from: Position, to: Position) {
@@ -864,10 +902,16 @@ export class GameService {
     else if (value > 100) value = 100;
 
     GameService.config.sound.masterVolume = value;
-    GameService.save("volume", value);
+    this.save("volume", value);
   }
 
-  isDebug = GameService.GAME_MODE === "debug";
+  isDebug() {
+    return GameService.isDebug();
+  }
+
+  static isDebug() {
+    return GameService.GAME_MODE === "debug";
+  }
 }
 
 export type GameBuildState = "debug" | "release";
@@ -876,6 +920,7 @@ export interface GameTexturesContainer {
   bg: string[];
   ship: string[];
   asteroid: string[];
+  pickups: Map<PickupItemType, string>;
 }
 
 export interface Position {
@@ -909,8 +954,16 @@ export interface PickupItem {
   speed: number;
   initialY: number;
   finalY: number;
-  type: string;
+  type: PickupItemType;
 }
+
+export type PickupItemType =
+  | "Hp"
+  | "MaxHp"
+  | "XpBoost"
+  | "Immunity"
+  | "Ammo"
+  | "MaxAmmo";
 
 export interface RotationZ {
   /** @type deg */
@@ -938,12 +991,6 @@ export interface BasicMovement {
 export interface IntervalsObject {
   score: Interval;
   asteroid: Interval;
-  asteroidClear: Interval;
-  distance: Interval;
-  moveUp: Interval;
-  moveDown: Interval;
-  moveLeft: Interval;
-  moveRight: Interval;
   positionTrack: Interval;
   pickupGeneration: Interval;
 }
@@ -961,7 +1008,7 @@ export interface PopupWindow {
 export type Timer = any;
 export type Interval = any;
 
-export type TypeConvertor = any;
+export type StringConvertor = (str: string) => any;
 
 export interface GameConfigObject {
   ship: {
@@ -971,6 +1018,7 @@ export interface GameConfigObject {
     defaultBg: number;
     defaultPosition: Position;
     defaultSize: number;
+    pickupRadius: number;
   };
   isEndGameDelay: boolean;
   endGameDelay: number;

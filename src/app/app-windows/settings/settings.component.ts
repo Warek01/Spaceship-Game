@@ -4,6 +4,7 @@ import {
   GameConfigObject,
   Interval,
 } from "src/app/services/game.service";
+import { ViewComputingService } from "src/app/services/viewComputing.service";
 
 @Component({
   selector: "app-settings-window",
@@ -16,7 +17,7 @@ export class SettingsWindowComponent implements OnInit {
   volume!: number;
   defaultVolume = GameService.config.sound.initialVolumeValue;
 
-  constructor(private Game: GameService) {
+  constructor(public Game: GameService, public View: ViewComputingService) {
     this.soundIsActive = !Game.isSoundDisabled;
     this.volume = this.soundIsActive
       ? GameService.config.sound.masterVolume
@@ -30,7 +31,7 @@ export class SettingsWindowComponent implements OnInit {
     if (this.soundIsActive) this.animateRange(0, this.defaultVolume);
     else this.animateRange(this.defaultVolume, 0);
 
-    GameService.save("sound-is-active", this.soundIsActive);
+    this.Game.save("sound-is-active", this.soundIsActive);
   }
 
   animateRange(from: number, to: number) {
@@ -47,7 +48,7 @@ export class SettingsWindowComponent implements OnInit {
       else if (from > to) this.volume = current--;
     }, interval);
 
-    GameService.save("volume", to);
+    this.Game.save("volume", to);
   }
 
   changeVolume(value: number) {

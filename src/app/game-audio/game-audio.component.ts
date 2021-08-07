@@ -17,9 +17,12 @@ export class GameAudioComponent implements OnInit {
     ["shoot-1", "shoot_1.wav"],
     ["shoot-2", "shoot_2.wav"],
     ["shoot-3", "shoot_3.wav"],
-    ["break", "break_1.wav"],
+    ["end-1", "end_1.wav"],
+    ["end-2", "end_2.wav"],
     ["notification", "notification_1.wav"],
     ["regen", "health_recharge_1.wav"],
+    ["item-pick-1", "item_pick_1.wav"],
+    ["item-pick-2", "item_pick_2.wav"],
   ]);
 
   constructor(public Game: GameService) {}
@@ -51,8 +54,11 @@ export type SoundId =
   | "shoot-3"
   | "regen"
   | "notification"
-  | "break"
-  | "explosion";
+  | "end-1"
+  | "end-2"
+  | "explosion"
+  | "item-pick-1"
+  | "item-pick-2";
 
 export interface GameSound {
   id: SoundId;

@@ -1,3 +1,5 @@
+import { PickupItemType } from "./services/game.service";
+
 export enum Difficulty {
   Test,
   Easy,
@@ -16,16 +18,24 @@ export const GameDifficulties: Map<Difficulty, GameDifficultyConfig> = new Map([
         initial: 3,
         max: 5,
         maxAllowed: 10,
-      },
+      }, // hp
       ammo: {
         initial: 10,
         max: 10,
         maxAllowed: 25,
         genRate: 750,
-      },
+      }, // ammo
       asteroidGenRate: 350,
-      itemGenRate: 2000,
-      upgradeItemChance: 35,
+      pickup: {
+        disabled: ["Immunity", "XpBoost"],
+        genRate: 1000,
+        chances: new Map<PickupItemType, number>([
+          ["Hp", 30],
+          ["MaxHp", 12.5],
+          ["Ammo", 40],
+          ["MaxAmmo", 100] // 17.5%
+        ]),
+      }, // pickup
     },
   ], // Test
   [
@@ -39,8 +49,18 @@ export const GameDifficulties: Map<Difficulty, GameDifficultyConfig> = new Map([
         maxAllowed: 20,
       },
       asteroidGenRate: 400,
-      itemGenRate: 3000,
-      upgradeItemChance: 35,
+      pickup: {
+        genRate: 3000,
+        disabled: [],
+        chances: new Map<PickupItemType, number>([
+          ["Hp", 25],
+          ["MaxHp", 10],
+          ["Ammo", 20],
+          ["MaxAmmo", 20],
+          ["Immunity", 20],
+          ["XpBoost", 100] // 5%
+        ]),
+      },
     },
   ], // Easy
   [
@@ -49,8 +69,18 @@ export const GameDifficulties: Map<Difficulty, GameDifficultyConfig> = new Map([
       hp: { initial: 3, max: 3, maxAllowed: 5 },
       ammo: { initial: 3, max: 10, genRate: 2, maxAllowed: 15 },
       asteroidGenRate: 350,
-      itemGenRate: 4000,
-      upgradeItemChance: 30,
+      pickup: {
+        genRate: 4000,
+        disabled: [],
+        chances: new Map<PickupItemType, number>([
+          ["Hp", 20],
+          ["MaxHp", 5],
+          ["Ammo", 35],
+          ["MaxAmmo", 10],
+          ["Immunity", 15],
+          ["XpBoost", 100], // 10%
+        ]),
+      },
     },
   ], // Medium
   [
@@ -59,8 +89,18 @@ export const GameDifficulties: Map<Difficulty, GameDifficultyConfig> = new Map([
       hp: { initial: 3, max: 3, maxAllowed: 4 },
       ammo: { initial: 0, max: 5, genRate: 3, maxAllowed: 8 },
       asteroidGenRate: 300,
-      itemGenRate: 4500,
-      upgradeItemChance: 20,
+      pickup: {
+        genRate: 4500,
+        disabled: [],
+        chances: new Map<PickupItemType, number>([
+          ["Hp", 20],
+          ["MaxHp", 5],
+          ["Ammo", 35],
+          ["MaxAmmo", 10],
+          ["Immunity", 15],
+          ["XpBoost", 100], // 15%
+        ]),
+      },
     },
   ], // Hard
   [
@@ -69,8 +109,15 @@ export const GameDifficulties: Map<Difficulty, GameDifficultyConfig> = new Map([
       hp: { initial: 1, max: 1, maxAllowed: 1 },
       ammo: { initial: 0, max: 1, genRate: 3, maxAllowed: 2 },
       asteroidGenRate: 200,
-      itemGenRate: 5000,
-      upgradeItemChance: 15,
+      pickup: {
+        genRate: 6000,
+        disabled: ["Immunity", "MaxHp", "Hp"],
+        chances: new Map<PickupItemType, number>([
+          ["MaxAmmo", 10],
+          ["XpBoost", 20],
+          ["Ammo", 100], // 70%
+        ]),
+      },
     },
   ], // Challenging
 ]);
@@ -93,8 +140,11 @@ export interface GameDifficultyConfig {
   };
   /** Millieconds to create an asteroid */
   asteroidGenRate: number;
-  /** Millieconds to create a pickable item */
-  itemGenRate: number;
-  /** Chance (0-100) that generated item will upgrade ship */
-  upgradeItemChance: number;
+  pickup: {
+    /** Millieconds to create a pickable item */
+    genRate: number;
+    /** Items that won't be generated */
+    disabled: PickupItemType[] | "all";
+    chances: Map<PickupItemType, number>;
+  };
 }

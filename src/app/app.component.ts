@@ -29,9 +29,10 @@ import { PopupComponent } from "./popup/popup.component";
   encapsulation: ViewEncapsulation.Emulated,
   host: {
     "(window:click)": "_events.onButtonClick($event)",
-    "(document:keydown.escape)": "_events.trackEscPress($event)",
-    "(document:keydown.h)": "_events.openHelpWindow()",
-    "(document:keydown.f)": "_events.enterFullScreen()",
+    "(window:keydown.escape)": "_events.trackEscPress($event)",
+    "(window:keydown.h)": "_events.openHelpWindow()",
+    "(window:keydown.f)": "_events.enterFullScreen()",
+    "(window:keydown.alt.shift.d)": "_events.toggleDebugMode()",
   },
 })
 export class AppComponent implements OnInit, AfterViewInit {
@@ -83,13 +84,20 @@ export class AppComponent implements OnInit, AfterViewInit {
     enterFullScreen: () => {
       this.Game.toggleFullscreen();
     },
+
+    toggleDebugMode: () => {
+      GameService.GAME_MODE = !this.Game.isDebug() ? "debug" : "release";
+
+      this.Game.save("debug-mode", this.Game.isDebug());
+      this.Game.reload();
+    },
   };
 
   private _existentPopup: ComponentRef<unknown> | null = null;
   createPopup(popup: PopupWindow) {
     if (this._existentPopup) this._existentPopup.destroy();
 
-    const ref = this._existentPopup = this._createComponent(PopupComponent);
+    const ref = (this._existentPopup = this._createComponent(PopupComponent));
     const input = <PopupWindow>ref.instance;
 
     input.duration = popup.duration;
@@ -122,7 +130,6 @@ export class AppComponent implements OnInit, AfterViewInit {
     this.Game.emitters.popup.subscribe((popup: PopupWindow) => {
       this.createPopup(popup);
     });
-
   }
 
   private _createComponent(component: Type<unknown>): ComponentRef<unknown> {

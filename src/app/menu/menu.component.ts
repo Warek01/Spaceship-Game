@@ -92,23 +92,23 @@ export class MenuComponent implements OnInit {
     switch (this.difficulty) {
       case Dif[Dif.Test]:
         this.difficulty = Dif[Dif.Easy];
-        this.Game.emitters.setDifficulty.emit(Dif.Easy);
+        this.Game.emitters.difficultyChange.emit(Dif.Easy);
         break;
       case Dif[Dif.Easy]:
         this.difficulty = Dif[Dif.Medium];
-        this.Game.emitters.setDifficulty.emit(Dif.Medium);
+        this.Game.emitters.difficultyChange.emit(Dif.Medium);
         break;
       case Dif[Dif.Medium]:
         this.difficulty = Dif[Dif.Hard];
-        this.Game.emitters.setDifficulty.emit(Dif.Hard);
+        this.Game.emitters.difficultyChange.emit(Dif.Hard);
         break;
       case Dif[Dif.Hard]:
         this.difficulty = Dif[Dif.Challenging];
-        this.Game.emitters.setDifficulty.emit(Dif.Challenging);
+        this.Game.emitters.difficultyChange.emit(Dif.Challenging);
         break;
       case Dif[Dif.Challenging]:
         this.difficulty = Dif[Dif.Test];
-        this.Game.emitters.setDifficulty.emit(Dif.Test);
+        this.Game.emitters.difficultyChange.emit(Dif.Test);
         break;
     }
   }
@@ -119,23 +119,23 @@ export class MenuComponent implements OnInit {
     switch (this.difficulty) {
       case Dif[Dif.Test]:
         this.difficulty = Dif[Dif.Challenging];
-        this.Game.emitters.setDifficulty.emit(Dif.Challenging);
+        this.Game.emitters.difficultyChange.emit(Dif.Challenging);
         break;
       case Dif[Dif.Challenging]:
         this.difficulty = Dif[Dif.Hard];
-        this.Game.emitters.setDifficulty.emit(Dif.Hard);
+        this.Game.emitters.difficultyChange.emit(Dif.Hard);
         break;
       case Dif[Dif.Hard]:
         this.difficulty = Dif[Dif.Medium];
-        this.Game.emitters.setDifficulty.emit(Dif.Medium);
+        this.Game.emitters.difficultyChange.emit(Dif.Medium);
         break;
       case Dif[Dif.Medium]:
         this.difficulty = Dif[Dif.Easy];
-        this.Game.emitters.setDifficulty.emit(Dif.Easy);
+        this.Game.emitters.difficultyChange.emit(Dif.Easy);
         break;
       case Dif[Dif.Easy]:
         this.difficulty = Dif[Dif.Test];
-        this.Game.emitters.setDifficulty.emit(Dif.Test);
+        this.Game.emitters.difficultyChange.emit(Dif.Test);
         break;
     }
   }

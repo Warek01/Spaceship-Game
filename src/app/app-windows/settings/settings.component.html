@@ -51,6 +51,15 @@
     > 
   </div>
 
+  <div class="option fullscreen">
+    <button 
+        *ngIf="View.availWidth < 1000"
+        (click)="Game.toggleFullscreen()"
+      >
+        fullscreen
+      </button>
+  </div>
+
   <div class="option reset">
     <button (click)="resetGame()">
       Reset

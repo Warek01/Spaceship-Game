@@ -19,6 +19,7 @@ import {
 import { ViewComputingService } from "../services/viewComputing.service";
 import { fromEvent, Subscription } from "rxjs";
 import { Difficulty, GameDifficulties } from "../Difficulties";
+import EventEmitter from "events";
 
 @Component({
   selector: "app-game",
@@ -26,18 +27,9 @@ import { Difficulty, GameDifficulties } from "../Difficulties";
   styleUrls: ["./game.component.scss"],
   host: {
     "(window:keydown.F1)": "_events.kill($event)",
-    "(window:keydown.F2)":
-      GameService.GAME_MODE === "debug"
-        ? "_events.nextShip($event)"
-        : "_events.PREVENT($event)",
-    "(window:keydown.F3)":
-      GameService.GAME_MODE === "debug"
-        ? "_events.endGame($event)"
-        : "_events.PREVENT($event)",
-    "(window:keydown.F4)":
-      GameService.GAME_MODE === "debug"
-        ? "_events.shipImmune($event)"
-        : "_events.PREVENT($event)",
+    "(window:keydown.F2)": "_events.nextShip($event)",
+    "(window:keydown.F3)": "_events.endGame($event)",
+    "(window:keydown.F4)": "_events.shipImmune($event)",
   },
 })
 export class GameComponent implements OnInit, OnDestroy, AfterViewInit {
@@ -65,6 +57,8 @@ export class GameComponent implements OnInit, OnDestroy, AfterViewInit {
   asteroids = new Map<number, Asteroid>();
   height!: string;
   shipIsHidden = false;
+  ammo!: number;
+  maxAmmo!: number;
   hp!: number;
   maxHp!: number;
 
@@ -85,30 +79,36 @@ export class GameComponent implements OnInit, OnDestroy, AfterViewInit {
       this._pickupObject.classList.add("debug");
     }
   }
-
+  
+  private _isImmune = this.Game.getConfig().ship.immune;
   private readonly _events = {
     PREVENT(e: Event) {
       e.preventDefault();
       e.stopImmediatePropagation();
     },
+
     endGame: (e: KeyboardEvent) => {
-      e.preventDefault();
-      e.stopPropagation();
+      if (!this.Game.isDebug()) return;
+      this._events.PREVENT(e);
+
       this.Game.endGame(0);
       this.Game.navTo(GameState.Menu);
     },
+
     kill: (e: KeyboardEvent) => {
       e.preventDefault();
       e.stopPropagation();
       this.Game.endGame(this.Game.getConfig().endGameDelay);
     },
+
     nextShip: (e: KeyboardEvent) => {
-      e.preventDefault();
-      e.stopPropagation();
+      this._events.PREVENT(e);
+      if (!this.Game.isDebug()) return;
     },
+    
     shipImmune: (e: KeyboardEvent) => {
-      e.preventDefault();
-      e.stopPropagation();
+      this._events.PREVENT(e);
+      if (!this.Game.isDebug()) return;
 
       if (
         this._shipImtSwpTmp &&
@@ -117,11 +117,12 @@ export class GameComponent implements OnInit, OnDestroy, AfterViewInit {
         return;
       else this._shipImtSwpTmp = Date.now();
 
-      this.Game.ship!.immune = !this.Game.ship.immune;
+      this.Game.ship.immune = !this._isImmune;
+      this._isImmune = !this._isImmune;
 
       this.Game.createPopup({
         duration: 3000,
-        text: `Immunity: ${this.Game.ship.immune}`,
+        text: `Immunity: ${this._isImmune}`,
       });
     },
   };
@@ -129,8 +130,7 @@ export class GameComponent implements OnInit, OnDestroy, AfterViewInit {
   private _renderPickup(pickup: PickupItem) {
     const obj = <HTMLDivElement>this._pickupObject.cloneNode();
 
-    obj.classList.add(pickup.type);
-
+    obj.dataset.type = pickup.type;
     obj.style.cssText = `
       top: ${pickup.initialY}px;
       left: ${this.Game.gameField.width()}px;
@@ -172,7 +172,7 @@ export class GameComponent implements OnInit, OnDestroy, AfterViewInit {
     }, 50);
 
     obj.ontransitionend = function transitionEnd(this: GameComponent) {
-      if (parseInt(getComputedStyle(obj).left) <= 0) this._removeAsteroid(obj);
+      if (obj.offsetLeft <= 0) this._removeAsteroid(obj);
     }.bind(this);
   }
 
@@ -238,6 +238,8 @@ export class GameComponent implements OnInit, OnDestroy, AfterViewInit {
     events.endGame.subscribe((NULL) => this.endGame());
     events.hitPoints.subscribe((val) => (this.hp = val));
     events.maxHitPoints.subscribe((val) => (this.maxHp = val));
+    events.ammo.subscribe((val) => (this.ammo = val));
+    events.maxAmmo.subscribe((val) => (this.maxAmmo = val));
     events.pickupGererated.subscribe((item) => this._renderPickup(item));
     events.shipBlink.subscribe((duration) => this.shipBlink(duration));
 
@@ -246,7 +248,9 @@ export class GameComponent implements OnInit, OnDestroy, AfterViewInit {
         pos.x <= this.statusWd.width + this.statusWd.margin &&
         pos.y >=
           this.Game.gameField.height() -
-            (this.statusWd.height + this.statusWd.margin + this.Game.ship.size)
+            (this.statusWd.height +
+              this.statusWd.margin +
+              this.Game.ship.size * 2)
       )
         this.statusWd.opacity = this.statusWd.transparentOpacity;
       else this.statusWd.opacity = this.statusWd.defaultOpacity;
@@ -263,6 +267,8 @@ export class GameComponent implements OnInit, OnDestroy, AfterViewInit {
     setTimeout(() => {
       this.hp = this.Game.ship.hp;
       this.maxHp = this.Game.ship.maxHp;
+      this.ammo = this.Game.ship.ammo;
+      this.maxAmmo = this.Game.ship.maxAmmo;
     });
   }
 
