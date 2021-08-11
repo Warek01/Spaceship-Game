@@ -2,12 +2,11 @@
 @use "scss/defaults" as def;
 @use "scss/mixins" as mix;
 
-@forward "scss/asteroid";
-@forward "scss/ship";
+@forward "scss/entities";
 
 :root {
   font-size: 16px;
-  font-family: fonts.$lexend;
+  font-family: def.$defalut-font;
   font-weight: 300;
   letter-spacing: 2px;
 }
@@ -28,7 +27,7 @@ body {
   background-size: cover;
 }
 
-button {
+button:not(.custom) {
   position: relative;
   display: block;
   border: none;
@@ -52,8 +51,51 @@ button {
   }
 }
 
+button.custom {
+  border-radius: 0;
+  border: none;
+  padding: 0;
+  margin: 0;
+  background-color: transparent;
+  cursor: default;
+
+  &:focus {
+    outline: none;
+    border: none;
+    background-color: transparent;
+  }
+
+  &:hover {
+    outline: none;
+    border: none;
+    background-color: transparent;
+  }
+}
+
 .logo {
-  font-family: fonts.$logo;
+  font-family: def.$logo-font;
   text-transform: uppercase;
   letter-spacing: 2px;
+}
+
+kbd {
+  display: inline-flex;
+  justify-content: center;
+  align-items: center;
+  text-transform: uppercase;
+  padding: 3px 6px;
+  border-radius: 5px;
+  font-weight: normal;
+  font-size: 0.8rem;
+  margin-left: 2px;
+  margin-right: 2px;
+  background-color: def.$kbd-dark;
+  font-family: def.$kbd-font;
+}
+
+.no-transition {
+  -webkit-transition: 0s !important;  
+  -moz-transition: 0s !important;
+  -o-transition: 0s !important;
+  transition: 0s !important;
 }

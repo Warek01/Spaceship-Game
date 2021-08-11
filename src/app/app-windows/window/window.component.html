@@ -1,0 +1,42 @@
+<div 
+  class="container" 
+  [class.extended]="options.isExtended" 
+  [ngStyle]="{
+    'width': options.width, 
+    'height': options.height,
+    'top': options.top
+  }"
+>
+
+  <div class="window">
+
+    <div class="toolbar">
+      <div class="left">
+
+      </div>
+
+      <div class="middle">
+        <span class="title">
+          {{title}}
+        </span>
+      </div>
+
+      <div class="right">
+        <div></div>
+        <button class="extend-window custom" (click)="options.isExtended? shrink() : extend()">
+          <div class="rect"></div>
+        </button>
+        <button class="close custom" (click)="close()">
+          <img src="../../assets/img/plus.png" alt="" srcset="">
+        </button>
+      </div>
+    </div>
+
+    <div class="content-area">
+      <div class="content">
+        <ng-content></ng-content>
+      </div>
+    </div>
+
+  </div>
+</div>

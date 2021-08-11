@@ -1,0 +1,28 @@
+.asteroid {
+  position: absolute;
+  display: inline-block;
+  border-radius: 50%;
+  background-image: none;
+  background-repeat: no-repeat;
+  background-size: cover;
+  z-index: 0;
+
+  transition: all 20s linear;
+
+  &.debug {
+    border: 1px solid #e84118;
+    outline: 1px solid #9c88ff;
+  }
+}
+
+.pickup {
+  display: inline-block;
+  position: absolute;
+  border-radius: 50%;
+  z-index: 1;
+
+  &.debug {
+    outline: 1px solid #4cd137;
+    border: 1px solid #273c75;
+  }
+}

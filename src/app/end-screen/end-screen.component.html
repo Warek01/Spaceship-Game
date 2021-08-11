@@ -1,10 +1,18 @@
 <div class="container">
-  <div class="banner">
-    <h1 class="game-over">
-      game over
-    </h1>
-  </div>
+
+  <h1 class="game-over">
+    game over
+  </h1>
+
+  <p class="sub-title">
+    Press <kbd>space</kbd> to restart
+  </p>
+  <p class="sub-title">
+    Press <kbd>q</kbd> to go to menu
+  </p>
+
   <br>
+
   <div class="stats">
     <p *ngFor="let stat of stats">
       <span class="stat-description">{{stat.description}}: </span>

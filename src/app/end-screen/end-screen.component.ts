@@ -1,31 +1,47 @@
 import { Component, OnInit } from "@angular/core";
-import { GameService } from "../services/game.service";
+import { GameService, Difficulty, GameState } from "../services/game.service";
 import { ViewComputingService } from "../services/viewComputing.service";
-
-export interface Statistic {
-  description: string;
-  data: number | string | boolean;
-}
 
 @Component({
   selector: "app-end-screen",
   templateUrl: "./end-screen.component.html",
   styleUrls: ["./end-screen.component.scss"],
+  host: {
+    "(window:keydown.space)": "Game.restart()",
+    "(window:keydown.q)": "goToMenu()",
+  },
 })
 export class EndScreenComponent implements OnInit {
-  stats: Statistic[] = [];
+  stats: Statistic[] = [
+    {
+      description: "Total asteroids passed",
+      data: this.Game.totalAsteroidsCount,
+    },
+    {
+      description: "Ingame time",
+      data: this.Game.ingameTime + " seconds",
+    },
+    {
+      description: "On diffiulty",
+      data: Difficulty[this.Game.difficulty],
+    },
+    {
+      description: "Items picked",
+      data: this.Game.itemsPicked,
+    },
+  ];
+
+  goToMenu() {
+    this.Game.stop();
+    this.Game.navTo(GameState.Menu);
+  }
 
   constructor(private View: ViewComputingService, private Game: GameService) {}
 
-  ngOnInit() {
-    this.stats.push({
-      description: "Total asteroids passed",
-      data: this.Game.totalAsteroidsCount,
-    });
+  ngOnInit() {}
+}
 
-    this.stats.push({
-      description: "Ingame time",
-      data: this.Game.ingameTime + " seconds",
-    });
-  }
+interface Statistic {
+  description: string;
+  data: number | string | boolean;
 }

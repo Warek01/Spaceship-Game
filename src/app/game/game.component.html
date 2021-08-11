@@ -1,7 +1,38 @@
 <div id="game" class="container" [style.height]="height">
+
   <div class="ship-container">
-    <div id="ship">
-      <div class="texture"></div>
+    <div id="ship" class="entity">
+      <div class="texture" [hidden]="shipIsHidden"></div>
     </div>
   </div>
+
+  <div 
+    id="status-window"
+    [class]="statusWd.class" 
+    [hidden]="statusWd.hidden"
+    [ngStyle]='{
+      opacity: statusWd.opacity,
+      width: statusWd.width + "px",
+      height: statusWd.height + "px",
+      left: statusWd.margin + "px",
+      bottom: statusWd.margin + "px"
+    }'
+  >
+    <div class="content">
+      <div class="hp">
+        <span>
+          HP: 
+        </span>
+          {{hp}} / {{maxHp}}
+      </div>
+      
+      <div class="ammo">
+        <span>
+          Shells: 
+        </span>
+          {{ammo}} / {{maxAmmo}}
+      </div>
+    </div>
+  </div>
+
 </div>

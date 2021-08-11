@@ -9,6 +9,7 @@ import {
 import { NavigationEnd, Router } from "@angular/router";
 import { GameService, GameState } from "../services/game.service";
 import { ViewComputingService } from "../services/viewComputing.service";
+import { WindowsService } from "../services/windows.service";
 
 @Component({
   selector: "app-header",
@@ -16,13 +17,11 @@ import { ViewComputingService } from "../services/viewComputing.service";
   styleUrls: ["./header.component.scss"],
 })
 export class HeaderComponent implements OnInit, OnChanges {
-  private _intervals: {
-    bestScore: any;
-  } = {
+  private _intervals: any = {
     bestScore: null,
   };
 
-  GameState = GameService.GameState;
+  GameState = GameState;
   attributes = {
     display: "flex",
     height: "0px",
@@ -40,13 +39,26 @@ export class HeaderComponent implements OnInit, OnChanges {
 
   constructor(
     private Router: Router,
+    private WinService: WindowsService,
     public Game: GameService,
     public View: ViewComputingService
   ) {
     this.attributes.height = View.headerHeight + "px";
   }
 
-  ngOnInit() { 
+  goToMenu() {
+    this.Game.navTo(this.GameState.Menu);
+  }
+
+  openHelpWindow() {
+    this.WinService.open("help");
+  }
+
+  openSettingsWindow() {
+    this.WinService.open("settings");
+  }
+
+  ngOnInit() {
     this.Router.events.subscribe((event) => {
       if (
         event instanceof NavigationEnd &&
@@ -71,9 +83,5 @@ export class HeaderComponent implements OnInit, OnChanges {
         }
       }, 500);
     }
-  }
-
-  goToMenu() {
-    this.Game.navTo(this.GameState.Menu);
   }
 }

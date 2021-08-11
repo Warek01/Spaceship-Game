@@ -1,0 +1,6 @@
+<audio 
+  *ngFor="let element of sounds | keyvalue"
+  [src]="Game.getSoundUrl(element.value)" 
+  [id]="element.key"
+  preload="auto"
+></audio>

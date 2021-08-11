@@ -1,0 +1,147 @@
+@use "../../../scss/defaults" as def;
+
+:host {
+  position: absolute;
+  display: flex;
+  justify-content: center;
+  align-items: center;
+  top: 0;
+  width: 100vw;
+  height: 100vh;
+  z-index: 99;
+}
+
+.container {
+  position: relative;
+  display: flex;
+  justify-content: center;
+  align-items: center;
+
+  transition: width 75ms linear, height 75ms linear;
+
+  &:not(.extended) {
+    @media screen and (max-width: 951px) {
+      width: 80%;
+      height: 85%;
+    }
+  }
+
+  &.extended {
+    .window {
+      border: none;
+    }
+
+    .extend-window {
+      .rect {
+        width: 8px !important;
+        height: 8px !important;
+        margin-top: -3px;
+
+        &::after {
+          content: "";
+          position: absolute;
+          width: 8px;
+          height: 8px;
+          margin-left: -8px;
+          margin-top: 2px;
+          border: 1px solid #000;
+          background-color: def.$button-white-color;
+        }
+      }
+
+      &:hover {
+        .rect::after {
+          background-color: def.$button-white-hover-color;
+        }
+      }
+    }
+  }
+}
+
+.window {
+  position: relative;
+  display: block;
+  width: 100%;
+  height: 100%;
+  background-color: def.$window-bg;
+  border: 1px solid def.$button-white-color;
+  transition: border 75ms ease;
+}
+
+.toolbar {
+  position: relative;
+  display: grid;
+  width: 100%;
+  height: 35px;
+  grid-template-rows: 100%;
+  grid-template-columns: 25% 50% 25%;
+  border-bottom: 1px solid rgba(#000, 0.25);
+
+  .right {
+    display: grid;
+    grid-template-rows: 100%;
+    grid-template-columns: repeat(3, 33.3333%);
+
+    button {
+      display: flex;
+      justify-content: center;
+      align-items: center;
+      position: relative;
+      width: 100%;
+      height: 100%;
+      border-radius: 0;
+      cursor: pointer;
+    }
+
+    .extend-window {
+      background-color: def.$button-white-color;
+
+      &:hover {
+        background-color: def.$button-white-hover-color;
+      }
+
+      .rect {
+        width: 13px;
+        height: 13px;
+        z-index: 5;
+        border: 1px solid #000;
+      }
+    }
+
+    .close {
+      background-color: def.$button-red-color;
+
+      &:hover {
+        background-color: def.$button-red-hover-color;
+      }
+
+      img {
+        width: 20px;
+        height: 20px;
+        transform: rotateZ(45deg);
+      }
+    }
+  }
+
+  .middle {
+    display: flex;
+    justify-content: center;
+    align-items: center;
+  }
+}
+
+.content-area {
+  position: relative;
+  display: flex;
+  justify-content: center;
+  align-items: center;
+  width: 100%;
+  height: calc(100% - 35px);
+
+  .content {
+    position: relative;
+    display: block;
+    width: 95%;
+    height: 100%;
+  }
+}

@@ -10,16 +10,18 @@
       Score: <br> {{currentScore}}
     </span>
 
-    <span class="best-score" *ngIf="bestScore && bestScore !== 0">
-      Best score: <br> {{bestScore}}
+    <span class="best-score" *ngIf="Game.bestScore && Game.bestScore !== 0">
+      Best score: <br> {{Game.bestScore}}
     </span>
 
-    <span class="best-score-alert" *ngIf="isBestScore">
+    <span class="best-score-alert" *ngIf="isBestScore && bestScore > 0">
       new best!
     </span>
 
+      <span class="debug" *ngIf="Game.isDebug()">Debug</span>
   </div>
-
+  
+  
   <div class="btn-container">
     <div class="btns">
 
@@ -27,12 +29,25 @@
         <button (click)="Game.pause()" *ngIf="currentGameState !== GameState.EndScreen">
           pause
         </button>
-        <button (click)="Game.stop()" *ngIf="currentGameState === GameState.Paused">
+        <button (click)="Game.endGame(0)" *ngIf="currentGameState === GameState.Paused">
           end
         </button>
       </ng-template>
-      <button>
-        help
+      
+      <ng-template [ngIf]="currentGameState !== GameState.InGame">
+        <button (click)="openHelpWindow()">
+          help
+        </button>
+        <button (click)="openSettingsWindow()">
+          settings
+        </button>
+      </ng-template>
+
+      <button 
+        *ngIf="View.availWidth > 1000"
+        (click)="Game.toggleFullscreen()"
+      >
+        fullscreen
       </button>
       <button (click)="goToMenu()" *ngIf="currentGameState === GameState.EndScreen">
         menu

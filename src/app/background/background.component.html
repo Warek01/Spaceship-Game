@@ -1,0 +1,8 @@
+<img 
+  alt="" 
+  class="background"
+  *ngFor="let url of bgUrls; index as i" 
+  [src]="url" 
+  [hidden]="i + 1 !== bgIndex"
+  (load)="i === 0? disableBgImg() : null"
+>

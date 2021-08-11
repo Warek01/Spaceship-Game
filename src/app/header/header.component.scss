@@ -5,17 +5,9 @@
   display: block;
   width: 100vw;
   overflow: hidden;
-
-  &::after,
-  &::before {
-    content: "";
-    position: relative;
-    display: block;
-    width: 100%;
-    height: 1px;
-    background-color: rgba(#000, .3);
-    box-shadow: 2px 0 7px #000;
-  }
+  top: 0;
+  margin: 0;
+  z-index: 100;
 }
 
 .container {
@@ -24,10 +16,17 @@
   width: 100vw;
 }
 
+.debug {
+  color: #e84118;
+  font-size: 1.1em;
+  font-weight: bold;
+  margin-left: 20px;
+}
+
 .info-bar {
   position: relative;
   display: flex;
-  width: 50%;
+  width: 60%;
   height: 100%;
   align-items: center;
   cursor: default;
@@ -46,11 +45,10 @@
       letter-spacing: 5px;
       font-weight: bold;
       color: def.$logo-color;
-      transition: text-shadow 300ms ease-out,
-        color 300ms ease-out;
-      
+      transition: text-shadow 300ms ease-out, color 300ms ease-out;
+
       &:hover {
-        text-shadow: 3px 3px 5px rgba(#000, .75);
+        text-shadow: 3px 3px 5px rgba(#000, 0.75);
         color: def.$button-color;
       }
     }
@@ -58,24 +56,49 @@
     &.score,
     &.best-score,
     &.best-score-alert {
+      position: relative;
       margin-left: 50px;
+    }
+
+    &.best-score {
+      @media screen and (max-width: 1151px) {
+        font-size: 0.9em;
+      }
     }
   }
 }
 
 .btn-container {
-  position: relative; 
+  position: relative;
   display: flex;
   width: 50%;
   height: 100%;
   justify-content: center;
-  align-items: center;
 
   .btns {
     display: flex;
-    width: 50%;
+    width: 75%;
     height: 100%;
-    justify-content: space-evenly;
+    justify-content: center;
     align-items: center;
+
+    @media screen and (max-width: 1001px) {
+      width: 100%;
+    }
+
+    @media screen and (max-width: 851px) {
+      justify-content: flex-end;
+    }
+
+    button {
+      &:not(:first-child) {
+        margin-left: 20px;
+      }
+
+      @media screen and (max-width: 851px) {
+        margin-left: 0;
+        margin-right: 20px;
+      }
+    }
   }
 }

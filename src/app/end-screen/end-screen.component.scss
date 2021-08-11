@@ -7,11 +7,25 @@
   display: block;
 }
 
-.banner {
-  @include mix.banner(true); 
-  min-height: 10%;
-  max-height: 30%;
-  margin-top: 10%;
+.game-over {
+  text-align: center;
+  text-transform: uppercase;
+  font-size: 3.5rem;
+  margin-top: 7.5%;
+}
+
+.sub-title {
+  display: flex;
+  justify-content: center;
+  align-items: center;
+  text-align: center;
+  font-size: 0.75rem;
+
+  kbd {
+    font-size: 0.75rem;
+    margin-left: 5px;
+    margin-right: 5px;
+  }
 }
 
 .stats {
@@ -26,6 +40,19 @@
   }
 
   .stat-data {
+    color: #c7ecee;
+    animation: animate-stat-data 3s infinite;
+  }
+}
+
+@keyframes animate-stat-data {
+  0% {
+    color: #c7ecee;
+  }
+  50% {
+    color: #3498db;
+  }
+  100% {
     color: #c7ecee;
   }
 }

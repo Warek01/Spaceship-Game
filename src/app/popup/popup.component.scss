@@ -1,0 +1,30 @@
+@use "../../scss/defaults";
+
+#main {
+  position: absolute;
+  display: flex;
+  bottom: 7.5%;
+  left: calc(50% - 110px);
+  justify-content: center;
+  align-items: center;
+  background-color: defaults.$button-color;
+  padding: 10px;
+  border-radius: 15px;
+  transition: filter 250ms linear;
+}
+
+.hide {
+  background-color: red;
+  filter: opacity(0);
+}
+
+#data {
+  position: relative;
+  display: inline-flex;
+  justify-content: center;
+  align-items: center;
+  width: 200px;
+
+  min-height: 50px;
+  max-height: 100px;
+}

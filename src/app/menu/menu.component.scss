@@ -3,7 +3,8 @@
 @use "../../scss/mixins" as mix;
 
 .container {
-  @include mix.container();
+  width: 100vw;
+  height: 100vh;
   display: block;
 }
 
@@ -54,6 +55,8 @@
       height: 125px;
       justify-content: center;
       align-items: center;
+      object-fit: cover;
+      object-position: center;
     }
 
     .title {
@@ -85,7 +88,7 @@
     padding: 30px 30px;
     font-size: 2rem;
     letter-spacing: 5px;
-    font-family: fonts.$logo-alt;
+    font-family: def.$logo-alt-font;
     box-shadow: 5px 5px 4px rgba(lighten(def.$button-color, 10), 0.25);
     transition: all 150ms linear;
 
@@ -95,4 +98,16 @@
       box-shadow: 3px 3px 5px rgba(#000, 0.35);
     }
   }
+}
+
+.focus-container {
+  display: flex;
+  justify-content: center;
+  align-items: center;
+  padding: 10px;
+  border-radius: 10px;
+}
+
+.focused {
+  border: 1px solid def.$button-red-color;
 }
