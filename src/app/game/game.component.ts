@@ -13,13 +13,11 @@ import {
   GameState,
   PickupItem,
   RotationZ,
-  PickupItemId,
 } from "../services/game.service";
 
 import { ViewComputingService } from "../services/viewComputing.service";
 import { fromEvent, Subscription } from "rxjs";
 import { Difficulty, GameDifficulties } from "../Difficulties";
-import EventEmitter from "events";
 
 @Component({
   selector: "app-game",
@@ -37,7 +35,6 @@ export class GameComponent implements OnInit, OnDestroy, AfterViewInit {
   private _keyDown!: Subscription;
   private _keyUp!: Subscription;
   private _gameElement!: HTMLDivElement;
-  private _statusWdPos!: DOMRect;
   private _shipImtCd = 250;
   private _shipImtSwpTmp!: number;
   private _asteroidObject!: HTMLDivElement;

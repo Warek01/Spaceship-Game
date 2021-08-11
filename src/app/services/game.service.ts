@@ -192,24 +192,7 @@ export class GameService {
   /** If to play the end sound */
   private _endSound = true;
 
-  ship!: Ship;
-  difficulty: Difficulty = Difficulty.Medium;
-  difficultyData: GameDifficultyConfig = GameDifficulties.get(this.difficulty)!;
-  isSoundDisabled = false;
-  itemsPicked = 0;
-  /** Images base URL */
-  readonly imgUrl = "./assets/img/";
-
-  /** Currently used texture index */
-  currentTexture: {
-    bg: number;
-    ship: number;
-  } = {
-    bg: 0,
-    ship: 0,
-  };
-
-  shipTexture = this.getTextureUrl(texturesContainer.ship[0]);
+  // **** Public properties ****
 
   /** All event emitters */
   readonly emitters = {
@@ -222,7 +205,7 @@ export class GameService {
     setBgTexture: new EventEmitter<number>(),
     ammo: new EventEmitter<number>(),
     maxAmmo: new EventEmitter<number>(),
-    /** Fires when a new asteroid is generated */
+    /** New asteroid generated */
     asteroid: new EventEmitter<Asteroid>(),
     /** Count an asteroid */
     countAsteroid: new EventEmitter<null>(),
@@ -232,34 +215,56 @@ export class GameService {
     nextBg: new EventEmitter<null>(),
     /** Switch to previous game background */
     prevBg: new EventEmitter<null>(),
+    /** Sound is played */
     playSound: new EventEmitter<GameSound>(),
-    /** Fires when game ends (before stop) */
+    /** Game end (before stop) */
     endGame: new EventEmitter<null>(),
     /** Creates a new explosion */
-    explosion: new EventEmitter<{ pos: Position; duration: number }>(),
-    /** Fires regulary with ship position */
+    explosion: new EventEmitter<{ position: Position; duration: number }>(),
+    /** Ship position update (interval) */
     position: new EventEmitter<Position>(),
-    /** Fires when hp amount changes */
+    /** Hp amount change */
     hitPoints: new EventEmitter<number>(),
-    /** Fires when max hp amount changes */
+    /** Max hp amount change */
     maxHitPoints: new EventEmitter<number>(),
     /** Make ship blink (appear and dissapear) for
      * @argument miliseconds */
     shipBlink: new EventEmitter<number>(),
-    /** Fires when game is resetted */
+    /** Game is resetted */
     reset: new EventEmitter<null>(),
+    /** Window size change */
     gameFieldChange: new EventEmitter<Size>(),
+    /** Popup window created */
     popup: new EventEmitter<PopupWindow>(),
-    /** Fires when sound is being enabled/disabled */
+    /** Sound is enabled/disabled */
     sound: new EventEmitter<boolean>(),
+    /** An item is picked */
     itemPicked: new EventEmitter<null>(),
+    /** Pickacble item is generated */
     pickupGererated: new EventEmitter<PickupItem>(),
   };
 
+  /** Images folder base URL */
+  readonly IMG_URL = "./assets/img/";
+
   /** Name of current key held by user */
+  ship!: Ship;
+  difficulty: Difficulty = Difficulty.Medium;
+  difficultyData: GameDifficultyConfig = GameDifficulties.get(this.difficulty)!;
+  isSoundDisabled = false;
+  itemsPicked = 0;
+  shipTexture = this.getTextureUrl(texturesContainer.ship[0]);
   movingVector: MovingDirection = V.none;
   bestScore = 0;
 
+  /** Currently used texture index */
+  currentTexture: {
+    bg: number;
+    ship: number;
+  } = {
+    bg: 0,
+    ship: 0,
+  };
   gameField: Size = {
     width() {
       return document.body.offsetWidth;
@@ -268,6 +273,8 @@ export class GameService {
       return document.body.offsetHeight;
     },
   };
+
+  // Public properties ---------------------------------
 
   shipMoveUp() {
     if (this.movingVector === V.up) return;
@@ -466,8 +473,8 @@ export class GameService {
     this._currentGameState = state;
   }
 
-  private _createExplosion(pos: Position, duration: number) {
-    this.emitters.explosion.emit({ pos, duration });
+  private _createExplosion(position: Position, duration: number) {
+    this.emitters.explosion.emit({ position, duration });
   }
 
   private _generatePickup(): PickupItem {
@@ -511,7 +518,7 @@ export class GameService {
   }
 
   /** Completely stop & move to end screen */
-  private _stop() {
+  stop() {
     if (this._currentScore > this.bestScore) {
       this.bestScore = this._currentScore;
       this._currentScore = 0;
@@ -524,9 +531,8 @@ export class GameService {
     this._scoreRate = 100;
     this._currentScore = 0;
     this._gameEndTimestamp = Date.now();
-
-    this._endSound && this.playSound(pickRandom<SoundId>("end-1", "end-2"));
-    this.navTo(GameState.EndScreen);
+    GameService.clearIntervals(this._intervals);
+    this._isStopped = false;
   }
 
   /** When ship collides into asteroid */
@@ -536,6 +542,7 @@ export class GameService {
     ship.hp--;
     ship.immune = true;
     this.emitters.hitPoints.emit(ship.hp);
+    this.playSound(pickRandom<SoundId>("explosion-1", "explosion-2"));
 
     if (ship.hp > 0) {
       this._createExplosion(pos, 500);
@@ -700,13 +707,15 @@ export class GameService {
     else if (timeout === null) timeout = 0;
 
     this.emitters.endGame.emit(null);
-    GameService.clearIntervals(this._intervals);
 
     $(this.ship.element).stop();
-    this._isStopped = true;
-
-    if (timeout) setTimeout(() => this._stop(), timeout);
-    else this._stop();
+    
+    this._endSound && this.playSound(pickRandom<SoundId>("end-1", "end-2"));
+    
+    if (timeout) setTimeout(() => this.stop(), timeout);
+    else this.stop();
+    
+    this.navTo(GameState.EndScreen);
   }
 
   /** Restart (from end screen) */
@@ -863,7 +872,7 @@ export class GameService {
   }
 
   getTextureUrl(src: string): string {
-    return this.imgUrl + src;
+    return this.IMG_URL + src;
   }
 
   getSoundUrl(src: string): string {
@@ -1030,3 +1039,5 @@ export interface GameConfigObject {
     initialVolumeValue: number;
   };
 }
+
+export type Component = any;

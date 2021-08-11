@@ -6,16 +6,3 @@
   left: 0;
   height: 0;
 }
-
-.explosion {
-  position: absolute;
-  width: 75px;
-  height: 75px;
-  top: 0;
-  left: 0;
-  object-fit: cover;
-  object-position: center;
-  transition: none;
-  z-index: 103;
-  // background-color: rgba(yellow, .25);
-}

@@ -1,4 +1,10 @@
-import { Component, OnInit } from "@angular/core";
+import {
+  Component,
+  ComponentFactoryResolver,
+  OnInit,
+  ViewContainerRef,
+  ViewEncapsulation
+} from "@angular/core";
 import { GameService, Position } from "../services/game.service";
 import { ViewComputingService } from "../services/viewComputing.service";
 
@@ -6,59 +12,38 @@ import { ViewComputingService } from "../services/viewComputing.service";
   selector: "game-effects",
   templateUrl: "./effects.component.html",
   styleUrls: ["./effects.component.scss"],
+  encapsulation: ViewEncapsulation.None
 })
 export class EffectsComponent implements OnInit {
-  explosions: Explosions = {
-    urlArr: [],
-    currentIndex: 0,
-    pos: { x: 0, y: 0 },
-    size: 100,
-  };
+  constructor(
+    public Game: GameService,
+    public View: ViewComputingService,
+    private Factory: ComponentFactoryResolver,
+    private ViewRef: ViewContainerRef
+  ) {}
 
-  constructor(private Game: GameService, private View: ViewComputingService) {
-    for (let i = 1; i <= 16; i++)
-      this.explosions.urlArr.push(this._getExplosionUrl(i + ".png"));
-  }
+  explode(position: Position, duration: number) {
+    const explosion = document.createElement("div");
+    explosion.classList.add("explosion");
 
-  explode(pos: Position, duration: number) {
-    this.Game.playSound("explosion");
-    this.explosions.currentIndex = 1;
+    const element = <HTMLDivElement>this.ViewRef.element.nativeElement;
 
-    const delay = duration / 16;
-    let timer: () => void,
-      timerId = setTimeout(
-        (timer = () => {
-          this.explosions.pos.y =
-            pos.y + this.View.headerHeight;
-          this.explosions.pos.x = pos.x;
+    element.append(explosion);
+    
+    // const factory = this.Factory.resolveComponentFactory(ExplosionComponent);
+    // const component = this.ViewRef.createComponent(factory);
+    // const input = component.instance;
 
-          if (this.explosions.currentIndex < 16) {
-            this.explosions.currentIndex++;
-            setTimeout(timer, delay);
-          } else {
-            this.explosions.pos = { x: 0, y: 0 };
-            this.explosions.currentIndex = 0;
-          }
-        }),
-        delay
-      );
-  }
+    // input.duration = duration;
+    // input.position = position;
+    // component.changeDetectorRef.detectChanges();
 
-  private _getExplosionUrl(src: string): string {
-    return this.Game.imgUrl + "explosions/" + src;
+    // setTimeout(() => component.destroy(), duration);
   }
 
   ngOnInit() {
-    this.Game.emitters.explosion.subscribe((obj) => {
-      this.explode(obj.pos, obj.duration);
-    });
+    this.Game.emitters.explosion.subscribe(({ position, duration }) =>
+      this.explode(position, duration)
+    );
   }
-}
-
-export interface Explosions {
-  urlArr: string[];
-  currentIndex: number;
-  pos: Position;
-  /** Width, Height (px) */
-  size: number;
 }

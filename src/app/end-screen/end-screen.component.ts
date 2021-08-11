@@ -27,11 +27,12 @@ export class EndScreenComponent implements OnInit {
     },
     {
       description: "Items picked",
-      data: this.Game.itemsPicked
-    }
+      data: this.Game.itemsPicked,
+    },
   ];
 
   goToMenu() {
+    this.Game.stop();
     this.Game.navTo(GameState.Menu);
   }
 

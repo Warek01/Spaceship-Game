@@ -16,6 +16,7 @@ import { WindowComponent } from "./app-windows/window/window.component";
 import { FormsModule } from "@angular/forms";
 import { EffectsComponent } from './effects/effects.component';
 import { PopupComponent } from './popup/popup.component';
+import { ExplosionComponent } from './effects/explosion/explosion.component';
 
 @NgModule({
   declarations: [
@@ -31,6 +32,7 @@ import { PopupComponent } from './popup/popup.component';
     WindowComponent,
     EffectsComponent,
     PopupComponent,
+    ExplosionComponent,
   ],
   imports: [BrowserModule, AppRoutingModule, HttpClientModule, FormsModule],
   providers: [HttpClientModule],
