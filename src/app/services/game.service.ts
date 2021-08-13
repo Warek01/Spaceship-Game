@@ -648,7 +648,6 @@ export class GameService {
       const len = entities.length;
       for (let i = 0; i < len; i++) {
         const entity = <HTMLDivElement>entities[i];
-
         if (entity && entity.id === "ship") {
           // Update ship position
           s.pos.x = entity.offsetLeft;
@@ -709,12 +708,12 @@ export class GameService {
     this.emitters.endGame.emit(null);
 
     $(this.ship.element).stop();
-    
+
     this._endSound && this.playSound(pickRandom<SoundId>("end-1", "end-2"));
-    
+
     if (timeout) setTimeout(() => this.stop(), timeout);
     else this.stop();
-    
+
     this.navTo(GameState.EndScreen);
   }
 

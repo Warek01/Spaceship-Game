@@ -3,16 +3,17 @@ import {
   ComponentFactoryResolver,
   OnInit,
   ViewContainerRef,
-  ViewEncapsulation
+  ViewEncapsulation,
 } from "@angular/core";
 import { GameService, Position } from "../services/game.service";
 import { ViewComputingService } from "../services/viewComputing.service";
+import { ExplosionComponent } from "./explosion/explosion.component";
 
 @Component({
   selector: "game-effects",
   templateUrl: "./effects.component.html",
   styleUrls: ["./effects.component.scss"],
-  encapsulation: ViewEncapsulation.None
+  encapsulation: ViewEncapsulation.None,
 })
 export class EffectsComponent implements OnInit {
   constructor(
@@ -23,22 +24,15 @@ export class EffectsComponent implements OnInit {
   ) {}
 
   explode(position: Position, duration: number) {
-    const explosion = document.createElement("div");
-    explosion.classList.add("explosion");
+    const factory = this.Factory.resolveComponentFactory(ExplosionComponent);
+    const component = this.ViewRef.createComponent(factory);
+    const input = component.instance;
 
-    const element = <HTMLDivElement>this.ViewRef.element.nativeElement;
+    input.duration = duration;
+    input.position = position;
+    component.changeDetectorRef.detectChanges();
 
-    element.append(explosion);
-    
-    // const factory = this.Factory.resolveComponentFactory(ExplosionComponent);
-    // const component = this.ViewRef.createComponent(factory);
-    // const input = component.instance;
-
-    // input.duration = duration;
-    // input.position = position;
-    // component.changeDetectorRef.detectChanges();
-
-    // setTimeout(() => component.destroy(), duration);
+    setTimeout(() => component.destroy(), duration);
   }
 
   ngOnInit() {

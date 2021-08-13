@@ -2,23 +2,31 @@ import { Component, Input, OnDestroy, OnInit } from "@angular/core";
 import { GameService, Interval, Position } from "src/app/services/game.service";
 
 @Component({
-  selector: "app-explosion",
-  template: ` 
-    <img 
-      alt="" 
-      class="explosion" 
-      [src]="currentSrc" 
-      [style.left]="position.x"
-      [style.top]="position.y"
-    /> 
-    `,
+  selector: "effect-explosion",
+  template: `
+    <img
+      alt=""
+      class="explosion"
+      [src]="currentSrc"
+      [style.left]="position.x + 'px'"
+      [style.top]="position.y + 'px'"
+    />
+  `,
   styles: [
     `
+      :host {
+        position: absolute;
+        top: 0;
+        left: 0;
+      }
+
       .explosion {
-        position: absolute:
-        width: 300px;
-        height: 300px;
+        position: absolute;
+        display: block;
+        width: 50px;
+        height: 50px;
         z-index: 100;
+        outline: 1px solid red;
       }
     `,
   ],
@@ -41,7 +49,7 @@ export class ExplosionComponent implements OnInit, OnDestroy {
     }
   }
 
-  ngOnInit() {
+  ngOnInit() {    
     const delay = Math.floor(this.duration / 16);
 
     const interval: Interval = setInterval(() => {
